@@ -1,0 +1,20 @@
+<package format="2">
+
+<name>m2_ps4</name>
+<version>0.0.1</version>
+<description>
+Robot input with PS4 gamepads
+</description>
+<maintainer email="c04022004@gmail.com">Cyrus Chan</maintainer>
+<license>GPL</license>
+
+<buildtool_depend>catkin</buildtool_depend>
+<depend>roscpp</depend>
+<depend>rospy</depend>
+<depend>std_msgs</depend>
+<depend>geometry_msgs</depend>
+
+<build_depend>message_generation</build_depend>
+<exec_depend>message_runtime</exec_depend>
+
+</package>

@@ -1,6 +1,6 @@
 <launch>
     <include file="$(find m2_ps4)/launch/ps4_msg.launch">
-        <arg name = "joy" default = "/dev/ds4red" />
+        <arg name = "joy" default = "/dev/ds4camo" />
     </include>
     <node name="turtlesim_node" pkg="turtlesim" type="turtlesim_node" />
     <node name="ps4_controller" pkg="turtle_ps4" type="ps4_controller.py" />

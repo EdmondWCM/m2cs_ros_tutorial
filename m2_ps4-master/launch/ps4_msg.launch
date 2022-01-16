@@ -1,0 +1,32 @@
+<launch>
+	<arg name="joy" default="/dev/input/js0"/>
+	<arg name="joy_deadzone" default="0.02"/>
+	<arg name="ps4_topic" default="input/ps4_data" />
+
+	<node name="joy_node" pkg="joy" type="joy_node" respawn="true" output="screen">
+		<param name="dev" type="str" value="$(arg joy)" />
+		<param name="deadzone" type="double" value="$(arg joy_deadzone)" />
+		<param name="autorepeat_rate" type="double" value="100.0" />
+		<param name="coalesce_interval" type="double" value="0.005" />
+	</node>
+
+	<node name="joy_adapter" pkg="m2_ps4" type="transform_data.py" respawn="true" output="screen">
+		<param name="ps4_topic" value="$(arg ps4_topic)" />
+	</node>
+
+	<node name="ds4_battery" pkg="m2_ps4" type="battery.py" respawn="true" output="screen">
+		<param name="dev" value="$(arg joy)" />
+	</node>
+
+	<node name="ds4_led" pkg="m2_ps4" type="led.py" respawn="true" output="screen">
+		<param name="dev" value="$(arg joy)" />
+	</node>
+
+	<node name="ds4_tpad" pkg="m2_ps4" type="tpad.py" respawn="true" output="screen">
+		<param name="dev" value="$(arg joy)_tpad" />
+	</node>
+
+	<node name="ds4_ff" pkg="m2_ps4" type="rumble.py" respawn="true" output="screen" >
+		<param name="dev" type="str" value="$(arg joy)_ff" />
+	</node>
+</launch>

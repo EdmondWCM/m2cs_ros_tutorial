@@ -1,0 +1,17 @@
+# if random is True and rgb_sequence is empty:
+#   LED is set to a random color every second
+# if random is True and len(rgb_sequence) == 1:
+#   LED is set to a random color every {rgb_sequence[0].seconds} seconds
+# if random is True and len(rgb_sequence) == 2:
+#   LED is set to a random color with RGB ranging between respeictive properties rgb_sequence[0] and rgb_sequence[1]
+#   with period {random.randrange(rgb_sequence[0].seconds, rgb_sequence[1])}
+# if random is True and len(rgb_sequence) > 2: undefined behaviour.
+# if random is False:
+#   LED is set to rgb_sequence[0], rgb_sequence[1], etc. and repeat the sequence endlessly.
+
+# RgbTime.seconds may be rounded up/down to 0.1 seconds
+
+bool random
+RgbTime[] rgb_sequence # [red, green, blue, seconds]
+# Don't set the time for too long. It changes before the RGB sequence finished.
+---

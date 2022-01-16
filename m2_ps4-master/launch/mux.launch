@@ -1,0 +1,29 @@
+<launch>
+	<arg name="joy" default="/dev/input/js0"/>
+	<arg name="joy_deadzone" default="0.02"/>
+	<arg name="topics" default="/input/ps4_msg"/>
+	<arg name="channel_topic" default="" />
+	<arg name="channel_colors" default="" />
+	<arg name="websim_port" default="22951" />
+
+	<arg name="websim" default="0" />
+
+	<group ns="ps4" unless="$(arg websim)">
+		<include file="$(find m2_ps4)/launch/ps4_msg.launch">
+			<arg name="joy" value="$(arg joy)" />
+			<arg name="joy_deadzone" value="$(arg joy_deadzone)" />
+			<arg name="ps4_topic" value="unmuxed" />
+		</include>
+	</group>
+
+	<node name="websim" ns="ps4" pkg="m2_ps4" type="websim.py" output="screen" if="$(arg websim)">
+		<param name="port" type="int" value="$(arg websim_port)" />
+		<param name="topic" type="str" value="/ps4/unmuxed" />
+	</node>
+
+	<node name="mux" ns="ps4/mux" pkg="m2_ps4" type="option_mux.py" output="screen">
+		<param name="topics" type="str" value="$(arg topics)"/>
+		<param name="channel_topic" type="str" value="$(arg channel_topic)"/>
+		<param name="channel_colors" type="str" value="$(arg channel_colors)"/>
+	</node>
+</launch>

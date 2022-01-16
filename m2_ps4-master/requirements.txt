@@ -1,0 +1,4 @@
+websockets
+evdev
+pyudev
+inquirer
