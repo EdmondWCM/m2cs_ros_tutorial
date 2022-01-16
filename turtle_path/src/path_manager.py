@@ -4,7 +4,7 @@ import rospy
 from math import pi, fmod, sin, cos, sqrt
 from geometry_msgs.msg import Twist
 from turtlesim.msg import Pose
-from turtle_path.srv import *
+from turtle_path.srv import SetOrientation, WalkDistance
 
 # hint: some imports are missing
 
@@ -70,7 +70,8 @@ def cb_orientation(req):
         
         rate.sleep()
     
-    vel = Twist() # publish a velocity 0 at the end, to ensure the turtle really stops
+    # publish a velocity 0 at the end, to ensure the turtle really stops
+    vel = Twist() 
     vel.angular.z = 0
     pub.publish(vel)
 
