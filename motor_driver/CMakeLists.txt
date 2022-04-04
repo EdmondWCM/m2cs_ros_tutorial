@@ -121,6 +121,7 @@ include_directories(
 )
 
 add_executable(motor_driver src/motor_driver.cpp)
+target_link_libraries(motor_driver ${catkin_LIBRARIES})
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
 #   src/${PROJECT_NAME}/motor_driver.cpp
