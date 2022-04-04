@@ -53,43 +53,37 @@ int main(int argc, char** argv)
         if (feedback.size() > 2) {
             std::cout << "read: " << feedback;
             // parse the feedback (3 int separated by space) and publish here
-            string p="";
-            string v="";
-            string i="";
+            int p;
+            int v;
+            int i;
             stringstream ss;
 
-            std_msgs::Int32 convertedp;
-            std_msgs::Int32 convertedv;
-            std_msgs::Int32 convertedi;
-            int count=0;
-            for(int i = 0; i<feedback.size();i++){
-                if (count == 0){
-                    if(feedback[i] ==' ' ){
-                        count++;
-                    }else{
-                        p+=feedback[i];
-                    }
-                }
-                if (count == 1){
-                    if(feedback[i] ==' ' ){
-                        count++;
-                    }else{
-                        v+=feedback[i];
-                    }
-                }
-                if (count == 2){
-                    i+=feedback[i];
-                }
-            }
-            ss << p;
-            ss >> convertedp.data;
-            p_pub.publish(convertedp);
-            ss << v;
-            ss >> convertedv.data;
-            v_pub.publish(convertedv);
-            ss << i;
-            ss >> convertedi.data;
-            i_pub.publish(convertedi);
+
+            // int count=0;
+            // for(int i = 0; i<feedback.size();i++){
+            //     if (count == 0){
+            //         if(feedback[i] ==' ' ){
+            //             count++;
+            //         }else{
+            //             p+=feedback[i];
+            //         }
+            //     }
+            //     if (count == 1){
+            //         if(feedback[i] ==' ' ){
+            //             count++;
+            //         }else{
+            //             v+=feedback[i];
+            //         }
+            //     }
+            //     if (count == 2){
+            //         i+=feedback[i];
+            //     }
+            // }
+            ss >> p >> v >> i;
+            
+            p_pub.publish(p);
+            v_pub.publish(v);
+            i_pub.publish(i);
 
         }
 
