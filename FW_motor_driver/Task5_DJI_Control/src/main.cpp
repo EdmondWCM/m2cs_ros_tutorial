@@ -84,10 +84,11 @@ void get_command()
     //   this means two fields are successfully converted and assigned
     // - echo the command if it is a valid command
     // TYPE YOUR CODE HERE:
-    if(sscanf(cmd_buf, "%c %ld", &cmd, &val)!=2) 
+    int noOfField = sscanf(cmd_buf,"%c %ld",&cmd,&val);
+    if (!((noOfField==2&&(cmd=='i'||cmd=='v'||cmd=='p'))||(noOfField ==1 && cmd=='f'))){
         return;
-    Serial.print("cmd = "); Serial.print(cmd);
-    Serial.print(" val = "); Serial.println(val);
+    }
+
 
     // Task 5a.3
     // limit the input value defined at the top using constrain()
@@ -98,17 +99,20 @@ void get_command()
     case 'i':
         ctrl_mode = MODE_CUR;
         ctrl_target = constrain(val, -MAX_CUR, MAX_CUR);
+        enable_feedback = 1;
         break;
     case 'v':
         ctrl_mode = MODE_VEL;
         ctrl_target = constrain(val, -MAX_VEL, MAX_VEL);
+        enable_feedback = 1;
         break;
     case 'p':
         ctrl_mode = MODE_POS;
         ctrl_target = constrain(val, MIN_POS, MAX_POS);
+        enable_feedback = 1;
         break;
     case 'f':
-        enable_feedback = val;
+        enable_feedback = 1;
         break;
     default:
         break;
@@ -191,20 +195,21 @@ int32_t control()
 void print_feedback()
 {
     if(!enable_feedback) return;
-    Serial.print("Mode: ");
-    Serial.print(ctrl_mode);
-    Serial.print("  Val: ");
-    Serial.print(ctrl_target);    
-    Serial.print("  iout: ");
-    Serial.print(iout); 
-    Serial.print("  ENC: ");
+    // Serial.print("Mode: ");
+    // Serial.print(ctrl_mode);
+    // Serial.print("  Val: ");
+    // Serial.print(ctrl_target);    
+    // Serial.print("  iout: ");
+    // Serial.print(iout); 
+    // Serial.print("  ENC: ");
     Serial.print(dji_fb.enc);
     // Serial.print("Pendulum ENC: ");
     // Serial.print(cur_enc);
-    Serial.print("  RPM: ");
+    Serial.print(" ");
     Serial.print(dji_fb.rpm);
-    Serial.print("  Current: ");
+    Serial.print(" ");
     Serial.println(dji_fb.cur);
+    enable_feedback = 0;
 }
 
 
