@@ -120,6 +120,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
+add_executable(motor_driver src/motor_driver.cpp)
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
 #   src/${PROJECT_NAME}/motor_driver.cpp
