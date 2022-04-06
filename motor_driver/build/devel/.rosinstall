@@ -1,2 +1,0 @@
-- setup-file:
-    local-name: /home/edmond/catkin_ws/src/m2cs_ros_tutorial/motor_driver/build/devel/setup.sh
