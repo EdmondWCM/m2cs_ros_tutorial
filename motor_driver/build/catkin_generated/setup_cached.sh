@@ -9,7 +9,6 @@
 # modified environment variables
 export CMAKE_PREFIX_PATH="/home/edmond/catkin_ws/src/m2cs_ros_tutorial/motor_driver/build/devel:$CMAKE_PREFIX_PATH"
 export LD_LIBRARY_PATH="/home/edmond/catkin_ws/src/m2cs_ros_tutorial/motor_driver/build/devel/lib:$LD_LIBRARY_PATH"
-export PKG_CONFIG_PATH="/home/edmond/catkin_ws/src/m2cs_ros_tutorial/motor_driver/build/devel/lib/pkgconfig:/home/edmond/catkin_ws/devel/lib/pkgconfig:$PKG_CONFIG_PATH"
-export PYTHONPATH="/home/edmond/catkin_ws/devel/lib/python3/dist-packages:$PYTHONPATH"
+export PKG_CONFIG_PATH="/home/edmond/catkin_ws/src/m2cs_ros_tutorial/motor_driver/build/devel/lib/pkgconfig:$PKG_CONFIG_PATH"
 export ROSLISP_PACKAGE_DIRECTORIES="/home/edmond/catkin_ws/src/m2cs_ros_tutorial/motor_driver/build/devel/share/common-lisp:$ROSLISP_PACKAGE_DIRECTORIES"
 export ROS_PACKAGE_PATH="/home/edmond/catkin_ws/src/m2cs_ros_tutorial/motor_driver:$ROS_PACKAGE_PATH"

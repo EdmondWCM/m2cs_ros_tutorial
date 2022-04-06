@@ -5,18 +5,20 @@
 
 
 using namespace std;
-
-std::string command = "f";
+std::string old_command = "";
+std::string command = "";
 // I have no idea how to add the (Int32) data to the (string) command.
 void pCallback(const std_msgs::Int32::ConstPtr& value){
     command = "p ";
     int temp= value->data;
     command += std::to_string(temp);
+    command+='\n';
+
     return;
 }
 
 void vCallback(const std_msgs::Int32::ConstPtr& value){
-    command = "v";
+    command = "v ";
     int temp= value->data;
     command += std::to_string(temp);
     return;
@@ -36,7 +38,7 @@ int main(int argc, char** argv)
     ros::Subscriber p_sub = nh.subscribe("p_setpoint",1,pCallback);
     ros::Subscriber v_sub = nh.subscribe("v_setpoint",1,vCallback);
 
-    serial::Serial motor("/dev/ttyUSB0", 115200);
+    serial::Serial motor("/dev/ttyUSB0", 1000000);
 
     if (motor.isOpen()) {
         ROS_INFO("Serial opened.");
@@ -45,17 +47,19 @@ int main(int argc, char** argv)
     }
 
     while (ros::ok()) {
+        
         // subscriber callback should update the command, do the send here
-
-        motor.write(command);
-
+        if (old_command!=command){
+            motor.write(command);
+            old_command=command;
+        }
         string feedback = motor.readline(); // read until ‘\n’
         if (feedback.size() > 2) {
             std::cout << "read: " << feedback;
             // parse the feedback (3 int separated by space) and publish here
-            int p;
-            int v;
-            int i;
+            std_msgs::Int32 p;
+            std_msgs::Int32 v;
+            std_msgs::Int32 i;
             stringstream ss;
 
 
@@ -79,7 +83,8 @@ int main(int argc, char** argv)
             //         i+=feedback[i];
             //     }
             // }
-            ss >> p >> v >> i;
+            ss << feedback;
+            ss >> p.data >> v.data >> i.data;
             
             p_pub.publish(p);
             v_pub.publish(v);

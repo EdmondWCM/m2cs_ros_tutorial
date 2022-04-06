@@ -39,9 +39,19 @@ enum Control_Mode
 Control_Mode ctrl_mode;
 int32_t ctrl_target;
 int16_t iout;
-bool enable_feedback = 0;   // initially is 0 means that we do not accept feedback at the beginning
 // bool enable_balance = 0;
+// This function will print out the feedback on the serial monitor
+void print_feedback()
+{
+    Serial.print(dji_fb.enc);
+    // Serial.print("Pendulum ENC: ");
+    // Serial.print(cur_enc);
+    Serial.print(" ");
+    Serial.print(dji_fb.rpm);
+    Serial.print(" ");
+    Serial.println(dji_fb.cur+'/n');
 
+}
 // This function will get the command from the user and update corresbonding configurations
 // General tasks of this function: 
 // 1. Read a line from serial monitor
@@ -99,24 +109,25 @@ void get_command()
     case 'i':
         ctrl_mode = MODE_CUR;
         ctrl_target = constrain(val, -MAX_CUR, MAX_CUR);
-        enable_feedback = 1;
+
         break;
     case 'v':
         ctrl_mode = MODE_VEL;
         ctrl_target = constrain(val, -MAX_VEL, MAX_VEL);
-        enable_feedback = 1;
+
         break;
     case 'p':
         ctrl_mode = MODE_POS;
         ctrl_target = constrain(val, MIN_POS, MAX_POS);
-        enable_feedback = 1;
+
         break;
     case 'f':
-        enable_feedback = 1;
+
         break;
     default:
         break;
     }
+    print_feedback();
 }
 
 
@@ -191,26 +202,7 @@ int32_t control()
 }
 
 
-// This function will print out the feedback on the serial monitor
-void print_feedback()
-{
-    if(!enable_feedback) return;
-    // Serial.print("Mode: ");
-    // Serial.print(ctrl_mode);
-    // Serial.print("  Val: ");
-    // Serial.print(ctrl_target);    
-    // Serial.print("  iout: ");
-    // Serial.print(iout); 
-    // Serial.print("  ENC: ");
-    Serial.print(dji_fb.enc);
-    // Serial.print("Pendulum ENC: ");
-    // Serial.print(cur_enc);
-    Serial.print(" ");
-    Serial.print(dji_fb.rpm);
-    Serial.print(" ");
-    Serial.println(dji_fb.cur);
-    enable_feedback = 0;
-}
+
 
 
 
@@ -220,7 +212,7 @@ void setup()
     Serial.begin(1000000);
     Serial.flush();
     dji_init();
-    Serial.println("DJI Init Done");
+    // Serial.println("DJI Init Done");
 
     // Uncomment the following if you have not yet complete get_command() part
     // for Task 5b.1
@@ -282,7 +274,6 @@ void loop()
 
     if (dji_get_feedback())
     {
-        print_feedback();
         // Serial.print("Speed: ");
         // Serial.println(max_speed);
         // Uncomment this when you want to play with pendulum
