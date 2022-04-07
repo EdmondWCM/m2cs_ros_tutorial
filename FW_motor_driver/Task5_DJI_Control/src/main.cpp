@@ -1,7 +1,6 @@
 #include <Arduino.h>
 #include "dji.h"
 #include <Encoder.h>
-
 // control loop limit for safe
 // DO NOT MODIFY UNTIL YOU ARE TOLD TO DO SO !
 #define MAX_VEL 2000 // maximum velocity +- 2000 rpm
@@ -95,7 +94,8 @@ void get_command()
     // - echo the command if it is a valid command
     // TYPE YOUR CODE HERE:
     int noOfField = sscanf(cmd_buf,"%c %ld",&cmd,&val);
-    if (!((noOfField==2&&(cmd=='i'||cmd=='v'||cmd=='p'))||(noOfField ==1 && cmd=='f'))){
+    if (!((noOfField==2&&(cmd=='i'||cmd=='v'||cmd=='p'))||(cmd =='f'))){
+        Serial.write("returned");
         return;
     }
 

@@ -6,7 +6,7 @@
 
 using namespace std;
 std::string old_command = "";
-std::string command = "";
+std::string command = "f \n";
 // I have no idea how to add the (Int32) data to the (string) command.
 void pCallback(const std_msgs::Int32::ConstPtr& value){
     command = "p ";
@@ -21,6 +21,8 @@ void vCallback(const std_msgs::Int32::ConstPtr& value){
     command = "v ";
     int temp= value->data;
     command += std::to_string(temp);
+    command+='\n';
+
     return;
 }
 
@@ -49,12 +51,14 @@ int main(int argc, char** argv)
     while (ros::ok()) {
         
         // subscriber callback should update the command, do the send here
-        if (old_command!=command){
-            motor.write(command);
-            old_command=command;
+        motor.write(command);
+        old_command = command;
+        if (command != "f \n"){
+            command = "f \n";
         }
+        
         string feedback = motor.readline(); // read until ‘\n’
-        if (feedback.size() > 2) {
+        if (feedback.size() > 2 && feedback!=old_command) {
             std::cout << "read: " << feedback;
             // parse the feedback (3 int separated by space) and publish here
             std_msgs::Int32 p;
@@ -63,26 +67,7 @@ int main(int argc, char** argv)
             stringstream ss;
 
 
-            // int count=0;
-            // for(int i = 0; i<feedback.size();i++){
-            //     if (count == 0){
-            //         if(feedback[i] ==' ' ){
-            //             count++;
-            //         }else{
-            //             p+=feedback[i];
-            //         }
-            //     }
-            //     if (count == 1){
-            //         if(feedback[i] ==' ' ){
-            //             count++;
-            //         }else{
-            //             v+=feedback[i];
-            //         }
-            //     }
-            //     if (count == 2){
-            //         i+=feedback[i];
-            //     }
-            // }
+            
             ss << feedback;
             ss >> p.data >> v.data >> i.data;
             
