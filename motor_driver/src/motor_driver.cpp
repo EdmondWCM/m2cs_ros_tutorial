@@ -13,6 +13,7 @@ void pCallback(const std_msgs::Int32::ConstPtr& value){
     int temp= value->data;
     command += std::to_string(temp);
     command+='\n';
+    ROS_INFO("command changed");
 
     return;
 }
@@ -22,6 +23,7 @@ void vCallback(const std_msgs::Int32::ConstPtr& value){
     int temp= value->data;
     command += std::to_string(temp);
     command+='\n';
+    ROS_INFO("command changed");
 
     return;
 }
@@ -30,7 +32,7 @@ int main(int argc, char** argv)
 {
     ros::init(argc, argv, "motor_driver");
     ros::Time::init();
-    ros::Rate loop_rate(100); // if Arduino is too slow, may have to lower this rate
+    ros::Rate loop_rate(1); // if Arduino is too slow, may have to lower this rate
     ros::NodeHandle nh("~");
 
     // create subscribers and publishers here
@@ -55,10 +57,12 @@ int main(int argc, char** argv)
         old_command = command;
         if (command != "f \n"){
             command = "f \n";
+            ROS_INFO("command sent and changed back to \'f\'");
         }
         
         string feedback = motor.readline(); // read until ‘\n’
         if (feedback.size() > 2 && feedback!=old_command) {
+            ROS_INFO("feedback received");
             std::cout << "read: " << feedback;
             // parse the feedback (3 int separated by space) and publish here
             std_msgs::Int32 p;

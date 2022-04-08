@@ -48,7 +48,7 @@ void print_feedback()
     Serial.print(" ");
     Serial.print(dji_fb.rpm);
     Serial.print(" ");
-    Serial.println(dji_fb.cur+'/n');
+    Serial.println(dji_fb.cur);
 
 }
 // This function will get the command from the user and update corresbonding configurations
