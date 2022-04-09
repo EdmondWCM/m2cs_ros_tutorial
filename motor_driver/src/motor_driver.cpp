@@ -7,7 +7,6 @@
 using namespace std;
 std::string old_command = "";
 std::string command = "f \n";
-// I have no idea how to add the (Int32) data to the (string) command.
 void pCallback(const std_msgs::Int32::ConstPtr& value){
     command = "p ";
     int temp= value->data;
@@ -32,7 +31,7 @@ int main(int argc, char** argv)
 {
     ros::init(argc, argv, "motor_driver");
     ros::Time::init();
-    ros::Rate loop_rate(1); // if Arduino is too slow, may have to lower this rate
+    ros::Rate loop_rate(100); // if Arduino is too slow, may have to lower this rate
     ros::NodeHandle nh("~");
 
     // create subscribers and publishers here
@@ -54,14 +53,13 @@ int main(int argc, char** argv)
         
         // subscriber callback should update the command, do the send here
         motor.write(command);
-        old_command = command;
         if (command != "f \n"){
             command = "f \n";
             ROS_INFO("command sent and changed back to \'f\'");
         }
         
         string feedback = motor.readline(); // read until ‘\n’
-        if (feedback.size() > 2 && feedback!=old_command) {
+        if (feedback.size()) {
             ROS_INFO("feedback received");
             std::cout << "read: " << feedback;
             // parse the feedback (3 int separated by space) and publish here

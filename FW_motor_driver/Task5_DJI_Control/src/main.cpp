@@ -71,7 +71,6 @@ void get_command()
     // TYPE YOUR CODE HERE:
     if(Serial.available() == 0) return;
     char received = Serial.read();
-    Serial.write(received);
     cmd_buf[cmd_buf_next++] = received;
 
     if(received == '\b'){
