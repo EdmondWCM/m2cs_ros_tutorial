@@ -6,12 +6,12 @@
 
 using namespace std;
 std::string old_command = "";
-std::string command = "f \n";
+std::string command = "f \r\n";
 void pCallback(const std_msgs::Int32::ConstPtr& value){
     command = "p ";
     int temp= value->data;
     command += std::to_string(temp);
-    command+='\n';
+    command+="\r\n";
     ROS_INFO("command changed");
 
     return;
@@ -21,7 +21,7 @@ void vCallback(const std_msgs::Int32::ConstPtr& value){
     command = "v ";
     int temp= value->data;
     command += std::to_string(temp);
-    command+='\n';
+    command+="\r\n";
     ROS_INFO("command changed");
 
     return;
@@ -53,8 +53,8 @@ int main(int argc, char** argv)
         
         // subscriber callback should update the command, do the send here
         motor.write(command);
-        if (command != "f \n"){
-            command = "f \n";
+        if (command != "f \r\n"){
+            command = "f \r\n";
             ROS_INFO("command sent and changed back to \'f\'");
         }
         
