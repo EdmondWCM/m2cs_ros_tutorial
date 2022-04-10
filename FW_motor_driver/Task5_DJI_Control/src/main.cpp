@@ -3,7 +3,7 @@
 #include <Encoder.h>
 // control loop limit for safe
 // DO NOT MODIFY UNTIL YOU ARE TOLD TO DO SO !
-#define MAX_VEL 2000 // maximum velocity +- 2000 rpm
+#define MAX_VEL 5000 // maximum velocity +- 2000 rpm
 #define MAX_CUR 1024 // maximum current +-2.5 A
 #define MAX_CUR_CHANGE 1024 // limit the change in current
 #define MAX_POS 500000 // maximum position 100000 count

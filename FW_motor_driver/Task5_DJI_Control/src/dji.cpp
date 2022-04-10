@@ -95,8 +95,8 @@ bool dji_get_feedback(){
   ///////////////////////////////////////////////////////////////////////
   // handle rpm, current endian
   ///////////////////////////////////////////////////////////////////////
-  dji_fb.rpm = dji_raw.rpm << 8 | dji_raw.rpm >> 8;
-  dji_fb.cur = dji_raw.cur << 8 | dji_raw.cur >> 8;
+    dji_fb.rpm   = (uint16_t)rx_msg.data[2] << 8 | rx_msg.data[3];
+    dji_fb.cur = (uint16_t)rx_msg.data[4] << 8 | rx_msg.data[5];
   return 1;
 }
  
