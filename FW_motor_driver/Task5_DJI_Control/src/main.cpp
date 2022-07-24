@@ -3,11 +3,11 @@
 #include <Encoder.h>
 // control loop limit for safe
 // DO NOT MODIFY UNTIL YOU ARE TOLD TO DO SO !
-#define MAX_VEL 5000 // maximum velocity +- 2000 rpm
-#define MAX_CUR 1024 // maximum current +-2.5 A
+#define MAX_VEL 2000        // maximum velocity +- 2000 rpm
+#define MAX_CUR 512         // maximum current +-2.5 A
 #define MAX_CUR_CHANGE 1024 // limit the change in current
-#define MAX_POS 500000 // maximum position 100000 count
-#define MIN_POS -500000 // maximum position 100000 count
+#define MAX_POS 500000     // maximum position 100000 count
+#define MIN_POS -500000     // maximum position 100000 count
 
 // For testing max speed achieved by m3508 for pendulum
 // int max_speed = 0;
@@ -17,7 +17,6 @@
 #define P_KP 128
 #define P_KD 1024
 #define V_KP 256
-
 
 // Pendulum's PID
 // #define kP 4.5
@@ -35,9 +34,12 @@ enum Control_Mode
     MODE_POS  // value = 2
 };
 
+int time = 0;
+
 Control_Mode ctrl_mode;
 int32_t ctrl_target;
 int16_t iout;
+int32_t exp_time;
 // bool enable_balance = 0;
 // This function will print out the feedback on the serial monitor
 void print_feedback()
@@ -49,10 +51,9 @@ void print_feedback()
     Serial.print(dji_fb.rpm);
     Serial.print(" ");
     Serial.println(dji_fb.cur);
-
 }
 // This function will get the command from the user and update corresbonding configurations
-// General tasks of this function: 
+// General tasks of this function:
 // 1. Read a line from serial monitor
 // 2. Update ctrl_mode, ctrl_target, enable_feedback
 void get_command()
@@ -61,6 +62,7 @@ void get_command()
     static uint8_t cmd_buf_next = 0;
     char cmd;
     int32_t val;
+    int32_t val2;
 
     // Task 5a.1
     // refer to Lab 4 simple calculator, read in a line of command
@@ -69,23 +71,27 @@ void get_command()
     // and use the max() function to ensure the 'next' is >= 0
     // this will allow you to delete a typo
     // TYPE YOUR CODE HERE:
-    if(Serial.available() == 0) return;
+    if (Serial.available() == 0)
+        return;
     char received = Serial.read();
     // Serial.print(received);
     cmd_buf[cmd_buf_next++] = received;
 
-    if(received == '\b'){
-        cmd_buf_next = max(0, cmd_buf_next-2);
+    if (received == '\b')
+    {
+        cmd_buf_next = max(0, cmd_buf_next - 2);
         return;
     }
-    else if(received == '\n'){
-        cmd_buf[cmd_buf_next-2] = '\0';
+    else if (received == '\n')
+    {
+        cmd_buf[cmd_buf_next - 2] = '\0';
         cmd_buf_next = 0;
-    }else{
+    }
+    else
+    {
         return;
     }
 
-    
     // Task 5a.2
     // - parse the line of command and extract the cmd word e.g. i/v/p/f
     //   and the value after it using sscanf() with format "%c %ld"
@@ -93,12 +99,12 @@ void get_command()
     //   this means two fields are successfully converted and assigned
     // - echo the command if it is a valid command
     // TYPE YOUR CODE HERE:
-    int noOfField = sscanf(cmd_buf,"%c %ld",&cmd,&val);
-    if (!((noOfField==2&&(cmd=='i'||cmd=='v'||cmd=='p'))||(cmd =='f'))){
+    int noOfField = sscanf(cmd_buf, "%c %ld %ld", &cmd, &val, &val2);
+    if (!((noOfField == 3 && (cmd == 'p')) || (noOfField == 2 && (cmd == 'i' || cmd == 'v')) || (cmd == 'f')))
+    {
         Serial.write("returned");
         return;
     }
-
 
     // Task 5a.3
     // limit the input value defined at the top using constrain()
@@ -118,7 +124,9 @@ void get_command()
         break;
     case 'p':
         ctrl_mode = MODE_POS;
+        time = 0;
         ctrl_target = constrain(val, MIN_POS, MAX_POS);
+        exp_time = val2;
 
         break;
     case 'f':
@@ -130,7 +138,6 @@ void get_command()
     print_feedback();
 }
 
-
 // This part is for control the motor(eg. position, speed, current)
 int32_t control()
 {
@@ -139,7 +146,8 @@ int32_t control()
     // desired output, error of output
     int32_t vdes, verr;
     // desired current output
-    int32_t ides; 
+    int32_t ides;
+    int32_t exp_pos;
     // with 'static' keyword, these values will retent after this function returns
     static int32_t prev_perr; // error of position loop in the previous loop cycle
     static int32_t prev_iout; // current output the previous loop cycle
@@ -147,34 +155,43 @@ int32_t control()
     // DO IT YOURSELF
     // use dji_fb.enc or dji_fb.rpm to calculate required current
     // such that the motor can move in the desired way given by ctrl_mode and ctrl_target
-    
-    if(ctrl_mode == MODE_CUR){
+
+    if (ctrl_mode == MODE_CUR)
+    {
         // MODE_CUR
         ides = ctrl_target;
     }
-    else{
-        if(ctrl_mode == MODE_VEL){
+    else
+    {
+        if (ctrl_mode == MODE_VEL)
+        {
             // MODE_VEL
             vdes = ctrl_target;
         }
-        else{
+        else
+        {
             // MODE_POS
-            pdes = ctrl_target;
-            // Task 5b.3 - position control loop (do it the last)
-            // Steps to follow:
-            // 1. Find perr, the error between desired position (pdes) and actual position (dji_fb.enc)
-            // 2. Find dperr, the difference between the error calculated in current loop cycle (perr)
-            //    and the previous loop cycle (prev_perr)
-            // 3. Calculate vdes using this formula: (P_KP*perr + P_KD*dperr)/128
-            // 4. Update prev_perr with perr
-            // 5. Limit vdes with MAX_VEL using constrain()
-            // TYPE YOUR CODE HERE:
-            perr = pdes - dji_fb.enc;
-            dperr = perr - prev_perr;
-            prev_perr = perr;
-            vdes = P_KP * perr + P_KD * dperr;
-            vdes /= 128;
-            vdes = constrain(vdes, -MAX_VEL, MAX_VEL);
+                // Task 5b.3 - position control loop (do it the last)
+                // Steps to follow:
+                // 1. Find perr, the error between desired position (pdes) and actual position (dji_fb.enc)
+                // 2. Find dperr, the difference between the error calculated in current loop cycle (perr)
+                //    and the previous loop cycle (prev_perr)
+                // 3. Calculate vdes using this formula: (P_KP*perr + P_KD*dperr)/128
+                // 4. Update prev_perr with perr
+                // 5. Limit vdes with MAX_VEL using constrain()
+                // TYPE YOUR CODE HERE:
+            if (time != exp_time)
+            {
+                // vdes = (6/(exp_time*exp_time))*time+(-6/(exp_time*exp_time*exp_time))*time*time;
+                pdes = ctrl_target;
+                perr = pdes - dji_fb.enc;
+                // dperr = perr - prev_perr;
+                // prev_perr = perr;
+                vdes = P_KP * perr;
+                vdes /= 128;
+                vdes = constrain(vdes, -MAX_VEL, MAX_VEL);
+                time ++;
+            }
         }
 
         // MODE_VEL and MODE_POS will go through this:
@@ -195,21 +212,17 @@ int32_t control()
     // 3. apply the limited change to the previous current output (prev_iout)
     // 4. prev_iout is now the calculated current, assign it to iout
     // TYPE YOUR CODE HERE:
-    prev_iout += constrain(ides-prev_iout, -MAX_CUR_CHANGE, MAX_CUR_CHANGE);
+    prev_iout += constrain(ides - prev_iout, -MAX_CUR_CHANGE, MAX_CUR_CHANGE);
     iout = prev_iout;
 
     return iout; // return the calculated current output
 }
 
-
-
-
-
-
 void setup()
 {
-    while(!Serial); // wait serial ready
-    Serial.begin(1000000);
+    while (!Serial)
+        ; // wait serial ready
+    Serial.begin(115200);
     Serial.flush();
     dji_init();
     // Serial.println("DJI Init Done");
@@ -225,7 +238,6 @@ void setup()
     // ctrl_mode = MODE_POS;
     // ctrl_target = 10000;
 }
-
 
 // void balance(){
 //     // Target velocity of dji motor
@@ -247,7 +259,7 @@ void setup()
 //     if (cur_enc > 2047)
 //         cur_enc -= 4096;
 
-//     // Task3: Stay still if the rod reaches deadzone 
+//     // Task3: Stay still if the rod reaches deadzone
 //     // (if the rod is within a range, pendulum will not move).
 //     int deadzone_lower_bound = -10;
 //     int deadzone_upper_bound = 10;
@@ -265,7 +277,6 @@ void setup()
 //         ctrl_target = target_v;
 //     }
 // }
-
 
 void loop()
 {
