@@ -141,10 +141,10 @@ void get_command()
 // This part is for control the motor(eg. position, speed, current)
 int32_t control()
 {
-    // desired output, error of output, change in output error
-    int32_t pdes, perr, dperr;
-    // desired output, error of output
-    int32_t vdes, verr;
+    // desired output, error of output, change in output error, expectied output
+    int32_t pdes, perr, dperr, pexp;
+    // desired output, error of output, expected velocity
+    int32_t vdes, verr, vexp;
     // desired current output
     int32_t ides;
     int32_t exp_pos;
@@ -182,13 +182,12 @@ int32_t control()
                 // TYPE YOUR CODE HERE:
             if (time != exp_time)
             {
-                // vdes = (6/(exp_time*exp_time))*time+(-6/(exp_time*exp_time*exp_time))*time*time;
-                pdes = ctrl_target;
-                perr = pdes - dji_fb.enc;
+                pexp = (3/(exp_time*exp_time))*time*time+(-2/(exp_time*exp_time*exp_time))*time*time*time;
+                vexp = (6/(exp_time*exp_time))*time+(-6/(exp_time*exp_time*exp_time))*time*time;
+                perr = pexp - dji_fb.enc;
                 // dperr = perr - prev_perr;
                 // prev_perr = perr;
-                vdes = P_KP * perr;
-                vdes /= 128;
+                vdes = P_KP * perr + vexp;
                 vdes = constrain(vdes, -MAX_VEL, MAX_VEL);
                 time ++;
             }
