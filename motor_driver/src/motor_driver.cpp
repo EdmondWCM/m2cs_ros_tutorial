@@ -40,10 +40,10 @@ int main(int argc, char** argv)
     ros::Publisher p_pub = nh.advertise<std_msgs::Int32>("p_feedback",1);
     ros::Publisher v_pub = nh.advertise<std_msgs::Int32>("v_feedback",1);
     ros::Publisher i_pub = nh.advertise<std_msgs::Int32>("i_feedback",1);
-    ros::Subscriber p_sub = nh.subscribe("p_setpoint",3,pCallback);
+    ros::Subscriber p_sub = nh.subscribe("p_setpoint",1,pCallback);
     ros::Subscriber v_sub = nh.subscribe("v_setpoint",1,vCallback);
 
-    serial::Serial motor("/dev/ttyUSB0", 115200);
+    serial::Serial motor("/dev/ttyUSB0", 1000000);
 
     if (motor.isOpen()) {
         ROS_INFO("Serial opened.");

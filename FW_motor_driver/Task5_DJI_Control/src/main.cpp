@@ -6,7 +6,7 @@
 #define MAX_VEL 2000        // maximum velocity +- 2000 rpm
 #define MAX_CUR 512         // maximum current +-2.5 A
 #define MAX_CUR_CHANGE 1024 // limit the change in current
-#define MAX_POS 500000     // maximum position 100000 count
+#define MAX_POS 500000      // maximum position 100000 count
 #define MIN_POS -500000     // maximum position 100000 count
 
 // For testing max speed achieved by m3508 for pendulum
@@ -40,17 +40,18 @@ Control_Mode ctrl_mode;
 int32_t ctrl_target;
 int16_t iout;
 int32_t exp_time;
+int32_t pstart;
 // bool enable_balance = 0;
 // This function will print out the feedback on the serial monitor
 void print_feedback()
 {
-    Serial.print(dji_fb.enc);
-    // Serial.print("Pendulum ENC: ");
-    // Serial.print(cur_enc);
-    Serial.print(" ");
-    Serial.print(dji_fb.rpm);
-    Serial.print(" ");
-    Serial.println(dji_fb.cur);
+        Serial.print(dji_fb.enc);
+        // Serial.print("Pendulum ENC: ");
+        // Serial.print(cur_enc);
+        Serial.print(" ");
+        Serial.print(dji_fb.rpm);
+        Serial.print(" ");
+        Serial.println(dji_fb.cur);
 }
 // This function will get the command from the user and update corresbonding configurations
 // General tasks of this function:
@@ -100,6 +101,14 @@ void get_command()
     // - echo the command if it is a valid command
     // TYPE YOUR CODE HERE:
     int noOfField = sscanf(cmd_buf, "%c %ld %ld", &cmd, &val, &val2);
+    // if (noOfField == 3)
+    // {
+    //     Serial.print("num of field = " + noOfField);
+    //     Serial.print("cmd = " + cmd);
+    //     Serial.print("pos = " + val);
+    //     Serial.print("time = " + val2);
+    // }
+
     if (!((noOfField == 3 && (cmd == 'p')) || (noOfField == 2 && (cmd == 'i' || cmd == 'v')) || (cmd == 'f')))
     {
         Serial.write("returned");
@@ -127,7 +136,7 @@ void get_command()
         time = 0;
         ctrl_target = constrain(val, MIN_POS, MAX_POS);
         exp_time = val2;
-
+        pstart = dji_fb.enc;
         break;
     case 'f':
 
@@ -170,27 +179,36 @@ int32_t control()
         }
         else
         {
+        
+            pdes=ctrl_target;
             // MODE_POS
-                // Task 5b.3 - position control loop (do it the last)
-                // Steps to follow:
-                // 1. Find perr, the error between desired position (pdes) and actual position (dji_fb.enc)
-                // 2. Find dperr, the difference between the error calculated in current loop cycle (perr)
-                //    and the previous loop cycle (prev_perr)
-                // 3. Calculate vdes using this formula: (P_KP*perr + P_KD*dperr)/128
-                // 4. Update prev_perr with perr
-                // 5. Limit vdes with MAX_VEL using constrain()
-                // TYPE YOUR CODE HERE:
-            if (time != exp_time)
+            // Task 5b.3 - position control loop (do it the last)
+            // Steps to follow:
+            // 1. Find perr, the error between desired position (pdes) and actual position (dji_fb.enc)
+            // 2. Find dperr, the difference between the error calculated in current loop cycle (perr)
+            //    and the previous loop cycle (prev_perr)
+            // 3. Calculate vdes using this formula: (P_KP*perr + P_KD*dperr)/128
+            // 4. Update prev_perr with perr
+            // 5. Limit vdes with MAX_VEL using constrain()
+            // TYPE YOUR CODE HERE:
+            const int32_t pdiff = pdes - pstart;
+            if (time <= exp_time)
             {
-                pexp = (3/(exp_time*exp_time))*time*time+(-2/(exp_time*exp_time*exp_time))*time*time*time;
-                vexp = (6/(exp_time*exp_time))*time+(-6/(exp_time*exp_time*exp_time))*time*time;
+                pexp = ((3 / (exp_time * exp_time)) * time * time + (-2 / (exp_time * exp_time * exp_time)) * time * time * time )*(pdiff)+pstart;
+                vexp = ((6 * (pdiff))/ (exp_time * exp_time)) * time + ((-6 *(pdiff))/ (exp_time * exp_time * exp_time)) * time * time;
                 perr = pexp - dji_fb.enc;
-                // dperr = perr - prev_perr;
-                // prev_perr = perr;
                 vdes = P_KP * perr + vexp;
                 vdes = constrain(vdes, -MAX_VEL, MAX_VEL);
-                time ++;
+                time++;
             }
+
+            //<-------old code-------->
+            // perr = pdes - dji_fb.enc;
+            // dperr = perr - prev_perr;
+            // prev_perr = perr;
+            // vdes = P_KP * perr + P_KD * dperr;
+            // vdes /= 128;
+            // vdes = constrain(vdes, -MAX_VEL, MAX_VEL);
         }
 
         // MODE_VEL and MODE_POS will go through this:
@@ -201,7 +219,11 @@ int32_t control()
         // TYPE YOUR CODE HERE:
         verr = vdes - dji_fb.rpm;
         ides = V_KP * verr;
-        ides /= 128;
+        if (time > exp_time)
+        {
+            ides = 0;
+        }
+        // ides /= 128;
         ides = constrain(ides, -MAX_CUR, MAX_CUR);
     }
 
@@ -221,7 +243,7 @@ void setup()
 {
     while (!Serial)
         ; // wait serial ready
-    Serial.begin(115200);
+    Serial.begin(1000000);
     Serial.flush();
     dji_init();
     // Serial.println("DJI Init Done");
