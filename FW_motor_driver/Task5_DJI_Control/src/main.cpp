@@ -151,7 +151,7 @@ void get_command()
 int32_t control()
 {
     // desired output, error of output, change in output error, expectied output
-    int32_t pdes, perr, dperr, pexp;
+    long long pdes, perr, dperr, pexp;
     // desired output, error of output, expected velocity
     int32_t vdes, verr, vexp;
     // desired current output
@@ -195,7 +195,8 @@ int32_t control()
             if (time <= exp_time)
             {
                 pexp = ((3 / (exp_time * exp_time)) * time * time + (-2 / (exp_time * exp_time * exp_time)) * time * time * time )*(pdiff)+pstart;
-                vexp = ((6 * (pdiff))/ (exp_time * exp_time)) * time + ((-6 *(pdiff))/ (exp_time * exp_time * exp_time)) * time * time;
+                vexp = ((6 * (pdiff))/ (exp_time * exp_time)) * time + ((-6 *(pdiff))/ (exp_time * exp_time * exp_time)) * time * time ;
+                vexp = (vexp*100*60)/(8191*19);
                 perr = pexp - dji_fb.enc;
                 vdes = P_KP * perr + vexp;
                 vdes = constrain(vdes, -MAX_VEL, MAX_VEL);
@@ -223,7 +224,7 @@ int32_t control()
         {
             ides = 0;
         }
-        // ides /= 128;
+        ides /= 128;
         ides = constrain(ides, -MAX_CUR, MAX_CUR);
     }
 
