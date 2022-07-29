@@ -125,11 +125,11 @@ void get_command()
 int32_t control()
 {
     // desired output, error of output, change in output error, expected output
-    long long pdes, perr, dperr, pexp;
+    float pdes, perr, dperr, pexp;
     // desired output, error of output, expected velocity
-    int32_t vdes, verr, vexp;
+    float vdes, verr, vexp;
     // desired current output
-    int32_t ides;
+    float ides;
     // with 'static' keyword, these values will retent after this function returns
     static int32_t prev_perr; // error of position loop in the previous loop cycle
     static int32_t prev_iout; // current output the previous loop cycle
