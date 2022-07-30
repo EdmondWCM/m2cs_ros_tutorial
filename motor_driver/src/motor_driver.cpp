@@ -3,6 +3,7 @@
 #include <serial/serial.h>
 #include <sstream>
 #include "motor_driver/pos_time.h"
+#include <fstream>
 using namespace std;
 std::string old_command = "";
 std::string command = "f \r\n";
@@ -30,7 +31,7 @@ void vCallback(const std_msgs::Int32::ConstPtr& value){
 }
 
 int main(int argc, char** argv)
-{
+{   
     ros::init(argc, argv, "motor_driver");
     ros::Time::init();
     ros::Rate loop_rate(100); // if Arduino is too slow, may have to lower this rate
@@ -44,6 +45,9 @@ int main(int argc, char** argv)
     ros::Subscriber v_sub = nh.subscribe("v_setpoint",1,vCallback);
 
     serial::Serial motor("/dev/ttyUSB0", 1000000);
+
+    ofstream fout;
+    
 
     if (motor.isOpen()) {
         ROS_INFO("Serial opened.");
@@ -63,6 +67,9 @@ int main(int argc, char** argv)
         if (feedback.size()) {
             ROS_INFO("feedback received");
             std::cout << "read: " << feedback;
+            fout.open("/home/edmond/Desktop/data.txt",ios::app);
+            fout << feedback;
+            fout.close();
             // parse the feedback (3 int separated by space) and publish here
             std_msgs::Int32 p;
             std_msgs::Int32 v;
@@ -82,7 +89,8 @@ int main(int argc, char** argv)
 
         ros::spinOnce();
         loop_rate.sleep();
-    }
 
+    }
+    
     return 0;
 }

@@ -3,8 +3,8 @@
 #include <Encoder.h>
 // control loop limit for safe
 // DO NOT MODIFY UNTIL YOU ARE TOLD TO DO SO !
-#define MAX_VEL 5000       // maximum velocity +- 2000 rpm
-#define MAX_CUR 2048       // maximum current +-2.5 A
+#define MAX_VEL 5000        // maximum velocity +- 2000 rpm
+#define MAX_CUR 2048        // maximum current +-2.5 A
 #define MAX_CUR_CHANGE 1024 // limit the change in current
 #define MAX_POS 500000      // maximum position 100000 count
 #define MIN_POS -500000     // maximum position 100000 count
@@ -14,7 +14,7 @@
 // int32_t cur_enc;
 
 // control loop parameters
-#define P_KP 64
+#define P_KP 0.8
 #define P_KD 1024
 #define V_KP 512
 
@@ -34,24 +34,35 @@ enum Control_Mode
     MODE_POS  // value = 2
 };
 
-long long time = 0;
+double time = 0;
 
 Control_Mode ctrl_mode;
 double ctrl_target;
 double iout;
 double exp_time;
 double pstart;
+double pexp = 0;
+double vexp = 0;
 // bool enable_balance = 0;
 // This function will print out the feedback on the serial monitor
 void print_feedback()
 {
     // if (time < exp_time)
     // {
-        Serial.print(dji_fb.enc);
-        Serial.print(" ");
-        Serial.print(dji_fb.rpm);
-        Serial.print(" ");
-        Serial.println(dji_fb.cur);
+    Serial.print(dji_fb.enc);
+    Serial.print(" ");
+    Serial.print(dji_fb.rpm);
+    Serial.print(" ");
+    Serial.print(dji_fb.cur);
+    Serial.print(" ");
+    Serial.print(pexp);
+    Serial.print(" ");
+    Serial.print(vexp);
+    Serial.print(" ");
+    Serial.print(time);
+    Serial.print(" ");
+    Serial.println(millis());
+
     // }
 }
 // This function will get the command from the user and update corresbonding configurations
@@ -125,13 +136,11 @@ void get_command()
 int32_t control()
 {
     // desired output, error of output, change in output error, expected output
-    double pdes, perr, dperr, pexp;
+    double pdes, perr;
     // desired output, error of output, expected velocity
-    double vdes, verr, vexp;
+    double vdes, verr;
     // desired current output
     double ides;
-    // with 'static' keyword, these values will retent after this function returns
-    static double prev_perr; // error of position loop in the previous loop cycle
     static double prev_iout; // current output the previous loop cycle
 
     // DO IT YOURSELF
@@ -153,24 +162,19 @@ int32_t control()
         else
         {
 
-
             pdes = ctrl_target;
             const float pdiff = pdes - pstart;
             if (time <= exp_time)
-            {  
+            {
                 // formular * pdiff + pstart -> getting the correst s-t graph
                 pexp = ((3.0 / (exp_time * exp_time)) * time * time + (-2.0 / (exp_time * exp_time * exp_time)) * time * time * time) * (pdiff) + pstart;
                 vexp = ((6.0 * (pdiff)) / (exp_time * exp_time)) * time + ((-6.0 * (pdiff)) / (exp_time * exp_time * exp_time)) * time * time;
-                // hz of the program = 1000
-                // turning the unit from pos/ms to rpm
-                vexp = (vexp * 1000 * 60)/8191;
+                vexp = (vexp * 1000 * 60) / 8191;
                 perr = pexp - dji_fb.enc;
                 vdes = P_KP * perr + vexp;
                 vdes = constrain(vdes, -MAX_VEL, MAX_VEL);
                 time++;
             }
-
-            
 
             //<-------old code--------> (for debug only)
             // perr = pdes - dji_fb.enc;
@@ -202,23 +206,23 @@ int32_t control()
     prev_iout = constrain(ides - prev_iout, -MAX_CUR_CHANGE, MAX_CUR_CHANGE);
     iout = prev_iout;
     // if time > exp_time, set output = 0
-            if (time > exp_time)
-            {
-                iout = 0;
-            }
+    if (time > exp_time)
+    {
+        iout = 0;
+    }
 
     return iout; // return the calculated current output
 }
 
 void setup()
 {
-    while (!Serial); // wait serial ready
+    while (!Serial)
+        ; // wait serial ready
     Serial.begin(1000000);
     Serial.flush();
     dji_init();
     // Serial.println("DJI Init Done");
 }
-
 
 void loop()
 {
