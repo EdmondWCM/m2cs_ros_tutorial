@@ -38,7 +38,7 @@ long long time = 0;
 
 Control_Mode ctrl_mode;
 int32_t ctrl_target;
-int16_t iout;
+int32_t iout;
 int32_t exp_time;
 int32_t pstart;
 // bool enable_balance = 0;
@@ -131,8 +131,8 @@ int32_t control()
     // desired current output
     float ides;
     // with 'static' keyword, these values will retent after this function returns
-    static int32_t prev_perr; // error of position loop in the previous loop cycle
-    static int32_t prev_iout; // current output the previous loop cycle
+    static float prev_perr; // error of position loop in the previous loop cycle
+    static float prev_iout; // current output the previous loop cycle
 
     // DO IT YOURSELF
     // use dji_fb.enc or dji_fb.rpm to calculate required current
@@ -155,7 +155,7 @@ int32_t control()
 
 
             pdes = ctrl_target;
-            const int32_t pdiff = pdes - pstart;
+            const float pdiff = pdes - pstart;
             if (time <= exp_time)
             {  
                 // formular * pdiff + pstart -> getting the correst s-t graph
