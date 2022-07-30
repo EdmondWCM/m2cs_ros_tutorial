@@ -37,10 +37,10 @@ enum Control_Mode
 long long time = 0;
 
 Control_Mode ctrl_mode;
-int32_t ctrl_target;
-int32_t iout;
-int32_t exp_time;
-int32_t pstart;
+double ctrl_target;
+double iout;
+double exp_time;
+double pstart;
 // bool enable_balance = 0;
 // This function will print out the feedback on the serial monitor
 void print_feedback()
@@ -125,14 +125,14 @@ void get_command()
 int32_t control()
 {
     // desired output, error of output, change in output error, expected output
-    float pdes, perr, dperr, pexp;
+    double pdes, perr, dperr, pexp;
     // desired output, error of output, expected velocity
-    float vdes, verr, vexp;
+    double vdes, verr, vexp;
     // desired current output
-    float ides;
+    double ides;
     // with 'static' keyword, these values will retent after this function returns
-    static float prev_perr; // error of position loop in the previous loop cycle
-    static float prev_iout; // current output the previous loop cycle
+    static double prev_perr; // error of position loop in the previous loop cycle
+    static double prev_iout; // current output the previous loop cycle
 
     // DO IT YOURSELF
     // use dji_fb.enc or dji_fb.rpm to calculate required current
@@ -159,8 +159,8 @@ int32_t control()
             if (time <= exp_time)
             {  
                 // formular * pdiff + pstart -> getting the correst s-t graph
-                pexp = ((3 / (exp_time * exp_time)) * time * time + (-2 / (exp_time * exp_time * exp_time)) * time * time * time) * (pdiff) + pstart;
-                vexp = ((6 * (pdiff)) / (exp_time * exp_time)) * time + ((-6 * (pdiff)) / (exp_time * exp_time * exp_time)) * time * time;
+                pexp = ((3.0 / (exp_time * exp_time)) * time * time + (-2.0 / (exp_time * exp_time * exp_time)) * time * time * time) * (pdiff) + pstart;
+                vexp = ((6.0 * (pdiff)) / (exp_time * exp_time)) * time + ((-6.0 * (pdiff)) / (exp_time * exp_time * exp_time)) * time * time;
                 // hz of the program = 1000
                 // turning the unit from pos/ms to rpm
                 vexp = (vexp * 1000 * 60)/8191;
