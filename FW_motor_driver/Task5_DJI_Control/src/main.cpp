@@ -4,7 +4,7 @@
 // control loop limit for safe
 // DO NOT MODIFY UNTIL YOU ARE TOLD TO DO SO !
 #define MAX_VEL 5000       // maximum velocity +- 2000 rpm
-#define MAX_CUR 1024       // maximum current +-2.5 A
+#define MAX_CUR 2048       // maximum current +-2.5 A
 #define MAX_CUR_CHANGE 1024 // limit the change in current
 #define MAX_POS 500000      // maximum position 100000 count
 #define MIN_POS -500000     // maximum position 100000 count
@@ -14,9 +14,9 @@
 // int32_t cur_enc;
 
 // control loop parameters
-#define P_KP 128
+#define P_KP 64
 #define P_KD 1024
-#define V_KP 256
+#define V_KP 512
 
 // Pendulum's PID
 // #define kP 4.5
