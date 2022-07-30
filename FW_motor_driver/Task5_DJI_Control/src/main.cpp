@@ -203,7 +203,7 @@ int32_t control()
     // 3. apply the limited change to the previous current output (prev_iout)
     // 4. prev_iout is now the calculated current, assign it to iout
     // TYPE YOUR CODE HERE:
-    prev_iout += constrain(ides - prev_iout, -MAX_CUR_CHANGE, MAX_CUR_CHANGE);
+    prev_iout = constrain(ides - prev_iout, -MAX_CUR_CHANGE, MAX_CUR_CHANGE);
     iout = prev_iout;
 
     return iout; // return the calculated current output
