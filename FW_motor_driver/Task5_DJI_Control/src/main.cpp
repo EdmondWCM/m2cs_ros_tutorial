@@ -3,8 +3,8 @@
 #include <Encoder.h>
 // control loop limit for safe
 // DO NOT MODIFY UNTIL YOU ARE TOLD TO DO SO !
-#define MAX_VEL 2000        // maximum velocity +- 2000 rpm
-#define MAX_CUR 512         // maximum current +-2.5 A
+#define MAX_VEL 5000       // maximum velocity +- 2000 rpm
+#define MAX_CUR 1024       // maximum current +-2.5 A
 #define MAX_CUR_CHANGE 1024 // limit the change in current
 #define MAX_POS 500000      // maximum position 100000 count
 #define MIN_POS -500000     // maximum position 100000 count
@@ -161,9 +161,9 @@ int32_t control()
                 // formular * pdiff + pstart -> getting the correst s-t graph
                 pexp = ((3 / (exp_time * exp_time)) * time * time + (-2 / (exp_time * exp_time * exp_time)) * time * time * time) * (pdiff) + pstart;
                 vexp = ((6 * (pdiff)) / (exp_time * exp_time)) * time + ((-6 * (pdiff)) / (exp_time * exp_time * exp_time)) * time * time;
-                // hz of the program = 100
-                // turning the unit from pos/0.01s to rpm
-                vexp = (vexp * 100 * 60)/(8191 * 19);
+                // hz of the program = 1000
+                // turning the unit from pos/ms to rpm
+                vexp = (vexp * 1000 * 60)/8191;
                 perr = pexp - dji_fb.enc;
                 vdes = P_KP * perr + vexp;
                 vdes = constrain(vdes, -MAX_VEL, MAX_VEL);
@@ -193,7 +193,7 @@ int32_t control()
         // TYPE YOUR CODE HERE:
         verr = vdes - dji_fb.rpm;
         ides = V_KP * verr;
-        ides /= 128;
+        // ides /= 128;
         ides = constrain(ides, -MAX_CUR, MAX_CUR);
     }
 
