@@ -193,7 +193,7 @@ int32_t control()
         // TYPE YOUR CODE HERE:
         verr = vdes - dji_fb.rpm;
         ides = V_KP * verr;
-        // ides /= 128;
+        ides /= 128;
         ides = constrain(ides, -MAX_CUR, MAX_CUR);
     }
 
