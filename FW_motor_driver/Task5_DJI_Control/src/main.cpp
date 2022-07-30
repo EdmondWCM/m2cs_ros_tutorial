@@ -170,11 +170,7 @@ int32_t control()
                 time++;
             }
 
-            // if time > exp_time, set output = 0
-            if (time > exp_time)
-            {
-                vdes = dji_fb.rpm;
-            }
+            
 
             //<-------old code--------> (for debug only)
             // perr = pdes - dji_fb.enc;
@@ -205,6 +201,11 @@ int32_t control()
     // TYPE YOUR CODE HERE:
     prev_iout = constrain(ides - prev_iout, -MAX_CUR_CHANGE, MAX_CUR_CHANGE);
     iout = prev_iout;
+    // if time > exp_time, set output = 0
+            if (time > exp_time)
+            {
+                iout = 0;
+            }
 
     return iout; // return the calculated current output
 }
