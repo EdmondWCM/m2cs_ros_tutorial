@@ -17,6 +17,8 @@ Jeff Lai 20211104
 #define CURRENT_LIMIT 1024
 #endif
 
+struct can_frame canMsg;
+
 volatile bool intterupt_received = false;
 struct can_frame rx_msg;
 struct can_frame tx_msg;
@@ -41,25 +43,13 @@ bool get_rx_msg(){
   uint8_t irq = mcp2515.getInterrupts();
   mcp2515.clearInterrupts();
   bool msg_received = false;
-  if (irq & MCP2515::CANINTF_RX0IF)
+  if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK)
   {
-    if (mcp2515.readMessage(MCP2515::RXB0, &rx_msg) == MCP2515::ERROR_OK)
-    {
-      // frame contains received from RXB0 message
-      // Serial.println("RXB0");
+    
       msg_received = true;
-    }
+    
   }
  
-  if (irq & MCP2515::CANINTF_RX1IF)
-  {
-    if (mcp2515.readMessage(MCP2515::RXB1, &rx_msg) == MCP2515::ERROR_OK)
-    {
-      // frame contains received from RXB1 message
-      // Serial.println("RXB1");
-      msg_received = true;
-    }
-  }
   return msg_received;
 }
  
@@ -67,8 +57,8 @@ void dji_init(){
   mcp2515.reset();
   mcp2515.setBitrate(CAN_1000KBPS, MCP_8MHZ);
   mcp2515.setNormalMode();
-  pinMode(INT_PIN, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(INT_PIN), on_mcp2515_cb, FALLING);
+  // pinMode(INT_PIN, INPUT_PULLUP);
+  // attachInterrupt(digitalPinToInterrupt(INT_PIN), on_mcp2515_cb, FALLING);
 }
 
 /*
