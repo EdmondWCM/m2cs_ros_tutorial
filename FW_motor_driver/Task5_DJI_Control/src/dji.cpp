@@ -19,6 +19,7 @@ Jeff Lai 20211104
 
 struct can_frame canMsg;
 
+
 volatile bool intterupt_received = false;
 struct can_frame rx_msg;
 struct can_frame tx_msg;
@@ -40,16 +41,32 @@ void on_mcp2515_cb()
 }
  
 bool get_rx_msg(){
-  uint8_t irq = mcp2515.getInterrupts();
-  mcp2515.clearInterrupts();
+  // uint8_t irq = mcp2515.getInterrupts();
+  // mcp2515.clearInterrupts();
   bool msg_received = false;
-  if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK)
-  {
-    
-      msg_received = true;
-    
+
+  if (mcp2515.readMessage(&rx_msg) == MCP2515::ERROR_OK){
+    msg_received = true;
   }
+  // if (irq & MCP2515::CANINTF_RX0IF)
+  // {
+  //   if (mcp2515.readMessage(MCP2515::RXB0, &rx_msg) == MCP2515::ERROR_OK)
+  //   {
+  //     // frame contains received from RXB0 message
+  //     // Serial.println("RXB0");
+  //     msg_received = true;
+  //   }
+  // }
  
+  // if (irq & MCP2515::CANINTF_RX1IF)
+  // {
+  //   if (mcp2515.readMessage(MCP2515::RXB1, &rx_msg) == MCP2515::ERROR_OK)
+  //   {
+  //     // frame contains received from RXB1 message
+  //     // Serial.println("RXB1");
+  //     msg_received = true;
+  //   }
+  // }
   return msg_received;
 }
  
