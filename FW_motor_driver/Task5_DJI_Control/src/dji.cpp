@@ -84,7 +84,8 @@ return 1 if success
 return 0 if failed
 */
 bool dji_get_feedback(){
-  if(!intterupt_received | !get_rx_msg())
+  // if(!intterupt_received | !get_rx_msg())
+  if(!get_rx_msg())
     return 0;
 
   static uint16_t prev_enc = 0;
