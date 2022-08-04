@@ -55,11 +55,11 @@ void print_feedback()
     Serial.print(" ");
     Serial.print(dji_fb.cur);
     Serial.print(" ");
-    Serial.print(pexp);
+    Serial.print((int)pexp);
     Serial.print(" ");
-    Serial.print(vexp);
+    Serial.print((int)vexp);
     Serial.print(" ");
-    Serial.print(time);
+    Serial.print((int)time);
     Serial.print(" ");
     Serial.println(millis());
 

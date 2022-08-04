@@ -40,6 +40,8 @@ int main(int argc, char** argv)
     // create subscribers and publishers here
     ros::Publisher p_pub = nh.advertise<std_msgs::Int32>("p_feedback",1);
     ros::Publisher v_pub = nh.advertise<std_msgs::Int32>("v_feedback",1);
+    ros::Publisher pexp_pub = nh.advertise<std_msgs::Int32>("p_expect",1);
+    ros::Publisher vexp_pub = nh.advertise<std_msgs::Int32>("v_expect",1);
     ros::Publisher i_pub = nh.advertise<std_msgs::Int32>("i_feedback",1);
     ros::Subscriber p_sub = nh.subscribe("p_setpoint",1,pCallback);
     ros::Subscriber v_sub = nh.subscribe("v_setpoint",1,vCallback);
@@ -70,20 +72,25 @@ int main(int argc, char** argv)
             fout.open("/home/edmond/Desktop/data.txt",ios::app);
             fout << feedback;
             fout.close();
-            // parse the feedback (3 int separated by space) and publish here
             std_msgs::Int32 p;
             std_msgs::Int32 v;
+            std_msgs::Int32 pexp;
+            std_msgs::Int32 vexp;
+            std_msgs::Int32 t;
             std_msgs::Int32 i;
             stringstream ss;
 
 
             
+            ss.clear();
             ss << feedback;
-            ss >> p.data >> v.data >> i.data;
-            
+            ss >> p.data >> v.data >> i.data >>pexp.data>>vexp.data>> t.data;
+
             p_pub.publish(p);
             v_pub.publish(v);
             i_pub.publish(i);
+            pexp_pub.publish(pexp);
+            vexp_pub.publish(vexp);
 
         }
 
