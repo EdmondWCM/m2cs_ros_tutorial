@@ -34,20 +34,21 @@ enum Control_Mode
     MODE_POS  // value = 2
 };
 
-double time = 0;
+double t_current = 0;
 
 Control_Mode ctrl_mode;
 double ctrl_target;
-double iout;
-double exp_time;
-double pstart;
-double pexp = 0;
-double vexp = 0;
+double i_out;
+double t_final;
+double p_init;
+double 
+double p_exp = 0;
+double v_exp = 0;
 // bool enable_balance = 0;
 // This function will print out the feedback on the serial monitor
 void print_feedback()
 {
-    // if (time < exp_time)
+    // if (t_current < t_final)
     // {
     Serial.print(dji_fb.enc);
     Serial.print(" ");
@@ -55,11 +56,11 @@ void print_feedback()
     Serial.print(" ");
     Serial.print(dji_fb.cur);
     Serial.print(" ");
-    Serial.print((int)pexp);
+    Serial.print((int)p_exp);
     Serial.print(" ");
-    Serial.print((int)vexp);
+    Serial.print((int)v_exp);
     Serial.print(" ");
-    Serial.print((int)time);
+    Serial.print((int)t_current);
     Serial.print(" ");
     Serial.println(millis());
 
@@ -118,10 +119,10 @@ void get_command()
         break;
     case 'p':
         ctrl_mode = MODE_POS;
-        time = 0;
+        t_current = 0;
         ctrl_target = constrain(val, MIN_POS, MAX_POS);
-        exp_time = val2;
-        pstart = dji_fb.enc;
+        t_final = val2;
+        p_init = dji_fb.enc;
         break;
     case 'f':
 
@@ -136,12 +137,12 @@ void get_command()
 int32_t control()
 {
     // desired output, error of output, change in output error, expected output
-    double pdes, perr;
+    double p_des, p_err;
     // desired output, error of output, expected velocity
-    double vdes, verr;
+    double v_des, v_err;
     // desired current output
-    double ides;
-    static double prev_iout; // current output the previous loop cycle
+    double i_des;
+    static double prev_i_out; // current output the previous loop cycle
 
     // DO IT YOURSELF
     // use dji_fb.enc or dji_fb.rpm to calculate required current
@@ -150,68 +151,68 @@ int32_t control()
     if (ctrl_mode == MODE_CUR)
     {
         // MODE_CUR
-        ides = ctrl_target;
+        i_des = ctrl_target;
     }
     else
     {
         if (ctrl_mode == MODE_VEL)
         {
             // MODE_VEL
-            vdes = ctrl_target;
+            v_des = ctrl_target;
         }
         else
         {
 
-            pdes = ctrl_target;
-            const float pdiff = pdes - pstart;
-            if (time <= exp_time)
+            p_des = ctrl_target;
+            const float p_diff = p_des - p_init;
+            if (t_current <= t_final)
             {
-                // formular * pdiff + pstart -> getting the correst s-t graph
-                pexp = ((3.0 / (exp_time * exp_time)) * time * time + (-2.0 / (exp_time * exp_time * exp_time)) * time * time * time) * (pdiff) + pstart;
-                vexp = ((6.0 * (pdiff)) / (exp_time * exp_time)) * time + ((-6.0 * (pdiff)) / (exp_time * exp_time * exp_time)) * time * time;
-                vexp = (vexp * 1000 * 60) / 8191;
-                perr = pexp - dji_fb.enc;
-                vdes = P_KP * perr + vexp;
-                vdes = constrain(vdes, -MAX_VEL, MAX_VEL);
-                time++;
+                // formular * p_diff + p_init -> getting the correst s-t graph
+                p_exp = ((3.0 / (t_final * t_final)) * t_current * t_current + (-2.0 / (t_final * t_final * t_final)) * t_current * t_current * t_current) * (p_diff) + p_init;
+                v_exp = ((6.0 * (p_diff)) / (t_final * t_final)) * t_current + ((-6.0 * (p_diff)) / (t_final * t_final * t_final)) * t_current * t_current;
+                v_exp = (v_exp * 1000 * 60) / 8191;
+                p_err = p_exp - dji_fb.enc;
+                v_des = P_KP * p_err + v_exp;
+                v_des = constrain(v_des, -MAX_VEL, MAX_VEL);
+                t_current++;
             }
 
             //<-------old code--------> (for debug only)
-            // perr = pdes - dji_fb.enc;
-            // dperr = perr - prev_perr;
-            // prev_perr = perr;
-            // vdes = P_KP * perr + P_KD * dperr;
-            // vdes /= 128;
-            // vdes = constrain(vdes, -MAX_VEL, MAX_VEL);
+            // p_err = p_des - dji_fb.enc;
+            // dp_err = p_err - prev_p_err;
+            // prev_p_err = p_err;
+            // v_des = P_KP * p_err + P_KD * dp_err;
+            // v_des /= 128;
+            // v_des = constrain(v_des, -MAX_VEL, MAX_VEL);
         }
 
         // MODE_VEL and MODE_POS will go through this:
         // Task 5b.2 - velocity control loop
-        // 1. find verr, the error between desired velocity (vdes) and actual velocity (dji_fb.rpm)
-        // 2. calculate ides with V_KP * verr / 128
-        // 3. limit ides with MAX_CUR using constrain()
+        // 1. find v_err, the error between desired velocity (v_des) and actual velocity (dji_fb.rpm)
+        // 2. calculate i_des with V_KP * v_err / 128
+        // 3. limit i_des with MAX_CUR using constrain()
         // TYPE YOUR CODE HERE:
-        verr = vdes - dji_fb.rpm;
-        ides = V_KP * verr;
-        ides /= 128;
-        ides = constrain(ides, -MAX_CUR, MAX_CUR);
+        v_err = v_des - dji_fb.rpm;
+        i_des = V_KP * v_err;
+        i_des /= 128;
+        i_des = constrain(i_des, -MAX_CUR, MAX_CUR);
     }
 
     // Task 5b.1 - limit the change in current (do it first)
-    // 1. find the difference between the desired current output(ides) and previous current output (prev_iout)
+    // 1. find the difference between the desired current output(i_des) and previous current output (prev_i_out)
     // 2. limit the difference with MAX_CUR_CHANGE using constrain()
-    // 3. apply the limited change to the previous current output (prev_iout)
-    // 4. prev_iout is now the calculated current, assign it to iout
+    // 3. apply the limited change to the previous current output (prev_i_out)
+    // 4. prev_i_out is now the calculated current, assign it to i_out
     // TYPE YOUR CODE HERE:
-    prev_iout = constrain(ides - prev_iout, -MAX_CUR_CHANGE, MAX_CUR_CHANGE);
-    iout = prev_iout;
-    // if time > exp_time, set output = 0
-    if (time > exp_time)
+    prev_i_out = constrain(i_des - prev_i_out, -MAX_CUR_CHANGE, MAX_CUR_CHANGE);
+    i_out = prev_i_out;
+    // if t_current > t_final, set output = 0
+    if (t_current > t_final)
     {
-        iout = 0;
+        i_out = 0;
     }
 
-    return iout; // return the calculated current output
+    return i_out; // return the calculated current output
 }
 
 void setup()
