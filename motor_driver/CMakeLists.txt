@@ -123,7 +123,10 @@ include
 )
 
 add_executable(motor_driver src/motor_driver.cpp)
+add_executable(motor_pub src/motor_pub.cpp)
+
 target_link_libraries(motor_driver ${catkin_LIBRARIES})
+target_link_libraries(motor_pub ${catkin_LIBRARIES})
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
 #   src/${PROJECT_NAME}/motor_driver.cpp
@@ -148,6 +151,7 @@ target_link_libraries(motor_driver ${catkin_LIBRARIES})
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 add_dependencies(motor_driver ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(motor_pub ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 # target_link_libraries(${PROJECT_NAME}_node
