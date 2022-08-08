@@ -41,7 +41,7 @@ double ctrl_target;
 double i_out;
 double t_final;
 double p_init;
-double v_init;
+long double v_init;
 double p_exp = 0;
 double v_exp = 0;
 double vt;
@@ -62,7 +62,9 @@ void print_feedback()
     Serial.print(" ");
     Serial.print((long)v_exp);
     Serial.print(" ");
-    Serial.print((long)t_current);
+    Serial.print((long)v_init);
+    Serial.print(" ");
+    Serial.print((long)p_diff);
     Serial.print(" ");
     Serial.println(millis());
 
@@ -128,9 +130,9 @@ void get_command()
         t_final = val2;
         p_init = dji_fb.enc;
         v_init = dji_fb.rpm;
-        v_init = v_init * 8191 / (1000*60);
-        vt = v_init*t_final;
+        v_init = (v_init * 8191.0)/(1000.0*60.0);
         p_diff = ctrl_target - p_init;
+        vt = (v_init/p_diff)*t_final;
 
         break;
     case 'f':
@@ -176,8 +178,8 @@ int32_t control()
             if (t_current <= t_final)
             {
                 // formular * p_diff + p_init -> getting the correst s-t graph
-                p_exp = (((v_init*t_current)/p_diff)+((3.0-2.0*vt) / (t_final * t_final)) * t_current * t_current - ((2.0 - 1.0*vt) / (t_final * t_final * t_final)) * t_current * t_current * t_current) * (p_diff) + p_init;
-                v_exp = (v_init/p_diff+((6.0-4.0*vt)/(t_final*t_final))*t_current-((6.0-3.0*vt)/(t_final*t_final*t_final))*(t_current * t_current))*p_diff;
+                p_exp = (((v_init*t_current)/p_diff)+(((3.0-2.0*vt) / (t_final * t_final)) * t_current * t_current )- (((2.0 - 1.0*vt) / (t_final * t_final * t_final)) * t_current * t_current * t_current)) * (p_diff) + p_init;
+                v_exp = ((v_init/p_diff)+(((6.0-4.0*vt)/(t_final*t_final))*t_current)-(((6.0-3.0*vt)/(t_final*t_final*t_final))*(t_current * t_current)))*p_diff;
                 v_exp = (v_exp * 1000 * 60) / 8191;
                 p_err = p_exp - dji_fb.enc;
                 v_des = P_KP * p_err + v_exp;
