@@ -41,9 +41,11 @@ double ctrl_target;
 double i_out;
 double t_final;
 double p_init;
-double 
+double v_init;
 double p_exp = 0;
 double v_exp = 0;
+double vt;
+double p_diff;
 // bool enable_balance = 0;
 // This function will print out the feedback on the serial monitor
 void print_feedback()
@@ -56,11 +58,11 @@ void print_feedback()
     Serial.print(" ");
     Serial.print(dji_fb.cur);
     Serial.print(" ");
-    Serial.print((int)p_exp);
+    Serial.print((long)p_exp);
     Serial.print(" ");
-    Serial.print((int)v_exp);
+    Serial.print((long)v_exp);
     Serial.print(" ");
-    Serial.print((int)t_current);
+    Serial.print((long)t_current);
     Serial.print(" ");
     Serial.println(millis());
 
@@ -108,11 +110,13 @@ void get_command()
     switch (cmd)
     {
     case 'i':
+        t_current = 0;
         ctrl_mode = MODE_CUR;
         ctrl_target = constrain(val, -MAX_CUR, MAX_CUR);
 
         break;
     case 'v':
+        t_current = 0;
         ctrl_mode = MODE_VEL;
         ctrl_target = constrain(val, -MAX_VEL, MAX_VEL);
 
@@ -123,6 +127,11 @@ void get_command()
         ctrl_target = constrain(val, MIN_POS, MAX_POS);
         t_final = val2;
         p_init = dji_fb.enc;
+        v_init = dji_fb.rpm;
+        v_init = v_init * 8191 / (1000*60);
+        vt = v_init*t_final;
+        p_diff = ctrl_target - p_init;
+
         break;
     case 'f':
 
@@ -164,12 +173,11 @@ int32_t control()
         {
 
             p_des = ctrl_target;
-            const float p_diff = p_des - p_init;
             if (t_current <= t_final)
             {
                 // formular * p_diff + p_init -> getting the correst s-t graph
-                p_exp = ((3.0 / (t_final * t_final)) * t_current * t_current + (-2.0 / (t_final * t_final * t_final)) * t_current * t_current * t_current) * (p_diff) + p_init;
-                v_exp = ((6.0 * (p_diff)) / (t_final * t_final)) * t_current + ((-6.0 * (p_diff)) / (t_final * t_final * t_final)) * t_current * t_current;
+                p_exp = (((v_init*t_current)/p_diff)+((3.0-2.0*vt) / (t_final * t_final)) * t_current * t_current - ((2.0 - 1.0*vt) / (t_final * t_final * t_final)) * t_current * t_current * t_current) * (p_diff) + p_init;
+                v_exp = (v_init/p_diff+((6.0-4.0*vt)/(t_final*t_final))*t_current-((6.0-3.0*vt)/(t_final*t_final*t_final))*(t_current * t_current))*p_diff;
                 v_exp = (v_exp * 1000 * 60) / 8191;
                 p_err = p_exp - dji_fb.enc;
                 v_des = P_KP * p_err + v_exp;
