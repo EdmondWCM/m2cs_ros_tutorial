@@ -2,30 +2,19 @@
 #include "dji.h"
 #include <Encoder.h>
 // control loop limit for safe
-// DO NOT MODIFY UNTIL YOU ARE TOLD TO DO SO !
-#define MAX_VEL 5000        // maximum velocity +- 2000 rpm
+
+#define MAX_VEL 5000        // maximum velocity +- 5000 rpm
 #define MAX_CUR 2048        // maximum current +-2.5 A
 #define MAX_CUR_CHANGE 1024 // limit the change in current
-#define MAX_POS 500000      // maximum position 100000 count
-#define MIN_POS -500000     // maximum position 100000 count
+#define MAX_POS 500000      // maximum position +-500000 count
 
-// For testing max speed achieved by m3508 for pendulum
-// int max_speed = 0;
-// int32_t cur_enc;
+
+
 
 // control loop parameters
 #define P_KP 0.8
 #define P_KD 1024
 #define V_KP 512
-
-// Pendulum's PID
-// #define kP 4.5
-// #define kD 8.5
-// #define multiplier 4
-
-// Create a encoder object
-// It will be used to get the position of the rod when operating pendulum
-// Encoder myEnc(3, 4);
 
 enum Control_Mode
 {
@@ -34,9 +23,9 @@ enum Control_Mode
     MODE_POS  // value = 2
 };
 
-double t_current = 0;
-
+// variable
 Control_Mode ctrl_mode;
+double t_current = 0;
 double ctrl_target;
 double i_out;
 double t_final;
@@ -50,12 +39,10 @@ double pre_a_exp = 0;
 double jerk_exp;
 double vt;
 double p_diff;
-// bool enable_balance = 0;
+
 // This function will print out the feedback on the serial monitor
 void print_feedback()
 {
-    // if (t_current < t_final)
-    // {
     Serial.print(dji_fb.enc);
     Serial.print(" ");
     Serial.print(dji_fb.rpm);
@@ -71,8 +58,6 @@ void print_feedback()
     Serial.print((long)jerk_exp);
     Serial.print(" ");
     Serial.println(millis());
-
-    // }
 }
 // This function will get the command from the user and update corresbonding configurations
 // General tasks of this function:
@@ -130,7 +115,7 @@ void get_command()
     case 'p':
         ctrl_mode = MODE_POS;
         t_current = 0;
-        ctrl_target = constrain(val, MIN_POS, MAX_POS);
+        ctrl_target = constrain(val, -MAX_POS , MAX_POS);
         t_final = val2;
         p_init = dji_fb.enc;
         v_init = dji_fb.rpm;
@@ -229,8 +214,7 @@ int32_t control()
 
 void setup()
 {
-    while (!Serial)
-        ; // wait serial ready
+    while (!Serial); // wait serial ready
     Serial.begin(1000000);
     Serial.flush();
     dji_init();

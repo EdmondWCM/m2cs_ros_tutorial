@@ -7,6 +7,8 @@
 using namespace std;
 std::string old_command = "";
 std::string command = "f \r\n";
+
+// if the command is p, run this callback.
 void pCallback(const motor_driver::pos_time::ConstPtr &value)
 {
     command = "p ";
@@ -21,6 +23,7 @@ void pCallback(const motor_driver::pos_time::ConstPtr &value)
     return;
 }
 
+//  if the command is v, run this callback.
 void vCallback(const std_msgs::Int32::ConstPtr &value)
 {
     command = "v ";
@@ -78,9 +81,11 @@ int main(int argc, char **argv)
         {
             ROS_INFO("feedback received");
             std::cout << "read: " << feedback;
+            // --------------- debug --------------- 
             fout.open("/home/edmond/Desktop/data.txt", ios::app);
-            fout << feedback;
+            fout << feedback; // add feedback into txt file
             fout.close();
+            // --------------- debug --------------- 
             std_msgs::Int32 p;
             std_msgs::Int32 v;
             std_msgs::Int32 pexp;
