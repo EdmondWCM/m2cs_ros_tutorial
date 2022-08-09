@@ -25,20 +25,19 @@ enum Control_Mode
 
 // variable
 Control_Mode ctrl_mode;
-double t_current = 0;
 double ctrl_target;
-double i_out;
-double t_final;
-double p_init;
-long double v_init;
-double p_exp = 0;
-double v_exp = 0;
-double pre_v_exp = 0;
-double a_exp;
-double pre_a_exp = 0;
-double jerk_exp;
-double vt;
-double p_diff;
+double t_current = 0;       // current time
+double t_final = 0;         // target time
+double p_init = 0;          // initial position
+double p_exp = 0;           // expected position
+double p_diff = 0;          // diff in initial and target position
+double v_init = 0;          // initial velocity
+double v_exp = 0;           // expected velocity
+double pre_v_exp = 0;       // previous expected velocity
+double vt = 0;              // (v_init / p_diff) * t_final
+double a_exp = 0;           // expected accleration
+double pre_a_exp = 0;       // previous expected accleration
+double jerk_exp = 0;        // expected jerk
 
 // This function will print out the feedback on the serial monitor
 void print_feedback()
@@ -101,26 +100,26 @@ void get_command()
     switch (cmd)
     {
     case 'i':
-        t_current = 0;
         ctrl_mode = MODE_CUR;
         ctrl_target = constrain(val, -MAX_CUR, MAX_CUR);
+        t_current = 0;
 
         break;
     case 'v':
-        t_current = 0;
         ctrl_mode = MODE_VEL;
         ctrl_target = constrain(val, -MAX_VEL, MAX_VEL);
+        t_current = 0;
 
         break;
     case 'p':
         ctrl_mode = MODE_POS;
-        t_current = 0;
         ctrl_target = constrain(val, -MAX_POS , MAX_POS);
+        t_current = 0;
         t_final = val2;
         p_init = dji_fb.enc;
+        p_diff = ctrl_target - p_init;
         v_init = dji_fb.rpm;
         v_init = (v_init * 8191.0) / (1000.0 * 60.0);
-        p_diff = ctrl_target - p_init;
         vt = (v_init / p_diff) * t_final;
 
         break;
@@ -140,8 +139,8 @@ int32_t control()
     double p_err;
     // desired output, error of output
     double v_des, v_err;
-    // desired current output
-    double i_des;
+    // desired current output, real current output
+    double i_des, i_out;
     static double prev_i_out; // current output the previous loop cycle
 
     if (ctrl_mode == MODE_CUR)
