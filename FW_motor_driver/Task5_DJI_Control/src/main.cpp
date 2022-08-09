@@ -136,17 +136,13 @@ void get_command()
 // This part is for control the motor(eg. position, speed, current)
 int32_t control()
 {
-    // desired output, error of output, change in output error, expected output
-    double p_des, p_err;
-    // desired output, error of output, expected velocity
+    // error of output
+    double p_err;
+    // desired output, error of output
     double v_des, v_err;
     // desired current output
     double i_des;
     static double prev_i_out; // current output the previous loop cycle
-
-    // DO IT YOURSELF
-    // use dji_fb.enc or dji_fb.rpm to calculate required current
-    // such that the motor can move in the desired way given by ctrl_mode and ctrl_target
 
     if (ctrl_mode == MODE_CUR)
     {
@@ -162,17 +158,15 @@ int32_t control()
         }
         else
         {
-
-            p_des = ctrl_target;
             if (t_current <= t_final && t_final != 0)
             {
                 // formular * p_diff + p_init -> getting the correst s-t graph
                 p_exp = (((v_init * t_current) / p_diff) + (((3.0 - 2.0 * vt) / (t_final * t_final)) * t_current * t_current) - (((2.0 - 1.0 * vt) / (t_final * t_final * t_final)) * t_current * t_current * t_current)) * (p_diff) + p_init; // unit = encoder count
                 v_exp = ((v_init / p_diff) + (((6.0 - 4.0 * vt) / (t_final * t_final)) * t_current) - (((6.0 - 3.0 * vt) / (t_final * t_final * t_final)) * (t_current * t_current))) * p_diff;
                 v_exp = (v_exp * 1000 * 60) / 8191; // unit = rpm
-                a_exp = (v_exp - pre_v_exp) * 1000; // unit = rpm/s
+                a_exp = (v_exp - pre_v_exp) * 1000; // unit = rpm/s, if want to find rpm/sp, remove "* 1000"
                 pre_v_exp = v_exp;
-                jerk_exp = (a_exp - pre_a_exp) * 1000; // unit rpm/s^-2
+                jerk_exp = (a_exp - pre_a_exp) * 1000; // unit rpm/s^-2, if want to find rpm/sp^-2, remove "* 1000" here and in a_exp
                 pre_a_exp = a_exp;
                 t_current++;
             }
