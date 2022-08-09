@@ -181,11 +181,11 @@ int32_t control()
                 p_exp = (((v_init*t_current)/p_diff)+(((3.0-2.0*vt) / (t_final * t_final)) * t_current * t_current )- (((2.0 - 1.0*vt) / (t_final * t_final * t_final)) * t_current * t_current * t_current)) * (p_diff) + p_init;
                 v_exp = ((v_init/p_diff)+(((6.0-4.0*vt)/(t_final*t_final))*t_current)-(((6.0-3.0*vt)/(t_final*t_final*t_final))*(t_current * t_current)))*p_diff;
                 v_exp = (v_exp * 1000 * 60) / 8191;
-                p_err = p_exp - dji_fb.enc;
-                v_des = P_KP * p_err + v_exp;
-                v_des = constrain(v_des, -MAX_VEL, MAX_VEL);
                 t_current++;
             }
+            p_err = p_exp - dji_fb.enc;
+            v_des = P_KP * p_err + v_exp;
+            v_des = constrain(v_des, -MAX_VEL, MAX_VEL);
 
             //<-------old code--------> (for debug only)
             // p_err = p_des - dji_fb.enc;
@@ -216,12 +216,6 @@ int32_t control()
     // TYPE YOUR CODE HERE:
     prev_i_out = constrain(i_des - prev_i_out, -MAX_CUR_CHANGE, MAX_CUR_CHANGE);
     i_out = prev_i_out;
-    // if t_current > t_final, set output = 0
-    if (t_current > t_final)
-    {
-        i_out = 0;
-    }
-
     return i_out; // return the calculated current output
 }
 
