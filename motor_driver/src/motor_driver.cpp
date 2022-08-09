@@ -81,11 +81,11 @@ int main(int argc, char **argv)
         {
             ROS_INFO("feedback received");
             std::cout << "read: " << feedback;
-            // --------------- debug --------------- 
+            // --------------- debug ---------------
             fout.open("/home/edmond/Desktop/data.txt", ios::app);
             fout << feedback; // add feedback into txt file
             fout.close();
-            // --------------- debug --------------- 
+            // --------------- debug ---------------
             std_msgs::Int32 p;
             std_msgs::Int32 v;
             std_msgs::Int32 pexp;
