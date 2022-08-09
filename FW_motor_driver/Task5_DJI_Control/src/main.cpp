@@ -44,6 +44,10 @@ double p_init;
 long double v_init;
 double p_exp = 0;
 double v_exp = 0;
+double pre_v_exp = 0;
+double a_exp;
+double pre_a_exp = 0;
+double jerk_exp;
 double vt;
 double p_diff;
 // bool enable_balance = 0;
@@ -62,9 +66,9 @@ void print_feedback()
     Serial.print(" ");
     Serial.print((long)v_exp);
     Serial.print(" ");
-    Serial.print((long)v_init);
+    Serial.print((long)a_exp);
     Serial.print(" ");
-    Serial.print((long)p_diff);
+    Serial.print((long)jerk_exp);
     Serial.print(" ");
     Serial.println(millis());
 
@@ -130,9 +134,9 @@ void get_command()
         t_final = val2;
         p_init = dji_fb.enc;
         v_init = dji_fb.rpm;
-        v_init = (v_init * 8191.0)/(1000.0*60.0);
+        v_init = (v_init * 8191.0) / (1000.0 * 60.0);
         p_diff = ctrl_target - p_init;
-        vt = (v_init/p_diff)*t_final;
+        vt = (v_init / p_diff) * t_final;
 
         break;
     case 'f':
@@ -175,12 +179,16 @@ int32_t control()
         {
 
             p_des = ctrl_target;
-            if (t_current <= t_final)
+            if (t_current <= t_final && t_final != 0)
             {
                 // formular * p_diff + p_init -> getting the correst s-t graph
-                p_exp = (((v_init*t_current)/p_diff)+(((3.0-2.0*vt) / (t_final * t_final)) * t_current * t_current )- (((2.0 - 1.0*vt) / (t_final * t_final * t_final)) * t_current * t_current * t_current)) * (p_diff) + p_init;
-                v_exp = ((v_init/p_diff)+(((6.0-4.0*vt)/(t_final*t_final))*t_current)-(((6.0-3.0*vt)/(t_final*t_final*t_final))*(t_current * t_current)))*p_diff;
-                v_exp = (v_exp * 1000 * 60) / 8191;
+                p_exp = (((v_init * t_current) / p_diff) + (((3.0 - 2.0 * vt) / (t_final * t_final)) * t_current * t_current) - (((2.0 - 1.0 * vt) / (t_final * t_final * t_final)) * t_current * t_current * t_current)) * (p_diff) + p_init; // unit = encoder count
+                v_exp = ((v_init / p_diff) + (((6.0 - 4.0 * vt) / (t_final * t_final)) * t_current) - (((6.0 - 3.0 * vt) / (t_final * t_final * t_final)) * (t_current * t_current))) * p_diff;
+                v_exp = (v_exp * 1000 * 60) / 8191; // unit = rpm
+                a_exp = (v_exp - pre_v_exp) * 1000; // unit = rpm/s
+                pre_v_exp = v_exp;
+                jerk_exp = (a_exp - pre_a_exp) * 1000; // unit rpm/s^-2
+                pre_a_exp = a_exp;
                 t_current++;
             }
             p_err = p_exp - dji_fb.enc;
