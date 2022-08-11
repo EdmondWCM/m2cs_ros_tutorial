@@ -32,14 +32,21 @@ double ctrl_target;
 double t_current = 0; // current time
 double t_target = 0;   // target time
 double p_init = 0;    // initial position
+double p_current = 0;
 double p_exp = 0;     // expected position
 double p_diff = 0;    // diff in initial and target position
 double v_init = 0;    // initial velocity
+double v_current = 0;
+double v_max = 0;
 double v_exp = 0;     // expected velocity
 double pre_v_exp = 0; // previous expected velocity
 double vt = 0;        // (v_init / p_diff) * t_target
+double a_init = 0;
+double a_current = 0;
+double a_max = 0;
 double a_exp = 0;     // expected accleration
 double pre_a_exp = 0; // previous expected accleration
+double jerk_max = 0;
 double jerk_exp = 0;  // expected jerk
 
 // This function will print out the feedback on the serial monitor
@@ -93,7 +100,7 @@ void get_command()
         return;
     }
 
-    int noOfField = sscanf(cmd_buf, "%s %ld %ld", &cmd, &val, &val2, &);
+    int noOfField = sscanf(cmd_buf, "%s %ld %ld %ld %ld", &cmd, &val, &val2, &val3, &val4);
     if (!((noOfField == 5 && (cmd == 'pvaj')) || (noOfField == 3 && (cmd == 'p')) || (noOfField == 2 && (cmd == 'i' || cmd == 'v')) || (cmd == 'f')))
     {
         Serial.write("returned");
@@ -130,12 +137,14 @@ void get_command()
         ctrl_mode = MODE_PVAJ;
         ctrl_target = constrain(val, -MAX_POS, MAX_POS);
         t_current = 0;
-        t_target = val2;
         p_init = dji_fb.enc;
         p_diff = ctrl_target - p_init;
         v_init = dji_fb.rpm;
         v_init = (v_init * 8191.0) / (1000.0 * 60.0);
-        vt = (v_init / p_diff) * t_target;
+        v_max = val2;
+        a_init = 
+        a_max = val3;
+        jerk_max = val4;
 
         break;
     case 'f':
