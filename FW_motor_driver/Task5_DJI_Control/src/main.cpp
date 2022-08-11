@@ -4,7 +4,6 @@
 #include <iostream>
 #include <ruckig/ruckig.hpp>
 
-
 using namespace ruckig;
 // control loop limit for safe
 
@@ -20,17 +19,17 @@ using namespace ruckig;
 
 enum Control_Mode
 {
-    MODE_CUR, // value = 0
-    MODE_VEL, // value = 1
-    MODE_POS  // value = 2
-    MODE_PVAJ // value = 3
+    MODE_CUR,     // value = 0
+    MODE_VEL,     // value = 1
+    MODE_POS      // value = 2
+        MODE_PVAJ // value = 3
 };
 
 // variable
 Control_Mode ctrl_mode;
 double ctrl_target;
 double t_current = 0; // current time
-double t_target = 0;   // target time
+double t_target = 0;  // target time
 double p_init = 0;    // initial position
 double p_exp = 0;     // expected position
 double p_diff = 0;    // diff in initial and target position
@@ -48,7 +47,8 @@ double a_max = 0;
 double a_exp = 0;     // expected accleration
 double pre_a_exp = 0; // previous expected accleration
 double jerk_max = 0;
-double jerk_exp = 0;  // expected jerk
+double jerk_current = 0;
+double jerk_exp = 0; // expected jerk
 
 // This function will print out the feedback on the serial monitor
 void print_feedback()
@@ -206,10 +206,6 @@ int32_t control()
             // v_des /= 128;
             // v_des = constrain(v_des, -MAX_VEL, MAX_VEL);
         }
-        v_pre = v_current;
-        v_current = dji_fb.rpm;
-        a_pre = a_current;
-        a_current = (v_current - v_pre) * 1000;
 
         // MODE_VEL and MODE_POS will go through this:
         // Task 5b.2 - velocity control loop
@@ -223,6 +219,11 @@ int32_t control()
         i_des = constrain(i_des, -MAX_CUR, MAX_CUR);
     }
 
+    v_pre = v_current;
+    v_current = dji_fb.rpm;
+    a_pre = a_current;
+    a_current = (v_current - v_pre) * 1000;
+    jerk_current = (a_current - a_pre) * 1000;
     // Task 5b.1 - limit the change in current (do it first)
     // 1. find the difference between the desired current output(i_des) and previous current output (prev_i_out)
     // 2. limit the difference with MAX_CUR_CHANGE using constrain()
