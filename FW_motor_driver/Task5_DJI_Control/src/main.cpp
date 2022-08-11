@@ -1,6 +1,11 @@
 #include <Arduino.h>
 #include "dji.h"
 #include <Encoder.h>
+#include <iostream>
+#include <ruckig/ruckig.hpp>
+
+
+using namespace ruckig;
 // control loop limit for safe
 
 #define MAX_VEL 5000        // maximum velocity +- 5000 rpm
@@ -18,20 +23,21 @@ enum Control_Mode
     MODE_CUR, // value = 0
     MODE_VEL, // value = 1
     MODE_POS  // value = 2
+    MODE_PVAJ // value = 3
 };
 
 // variable
 Control_Mode ctrl_mode;
 double ctrl_target;
 double t_current = 0; // current time
-double t_final = 0;   // target time
+double t_target = 0;   // target time
 double p_init = 0;    // initial position
 double p_exp = 0;     // expected position
 double p_diff = 0;    // diff in initial and target position
 double v_init = 0;    // initial velocity
 double v_exp = 0;     // expected velocity
 double pre_v_exp = 0; // previous expected velocity
-double vt = 0;        // (v_init / p_diff) * t_final
+double vt = 0;        // (v_init / p_diff) * t_target
 double a_exp = 0;     // expected accleration
 double pre_a_exp = 0; // previous expected accleration
 double jerk_exp = 0;  // expected jerk
@@ -87,8 +93,8 @@ void get_command()
         return;
     }
 
-    int noOfField = sscanf(cmd_buf, "%c %ld %ld", &cmd, &val, &val2);
-    if (!((noOfField == 3 && (cmd == 'p')) || (noOfField == 2 && (cmd == 'i' || cmd == 'v')) || (cmd == 'f')))
+    int noOfField = sscanf(cmd_buf, "%s %ld %ld", &cmd, &val, &val2, &);
+    if (!((noOfField == 5 && (cmd == 'pvaj')) || (noOfField == 3 && (cmd == 'p')) || (noOfField == 2 && (cmd == 'i' || cmd == 'v')) || (cmd == 'f')))
     {
         Serial.write("returned");
         return;
@@ -112,12 +118,24 @@ void get_command()
         ctrl_mode = MODE_POS;
         ctrl_target = constrain(val, -MAX_POS, MAX_POS);
         t_current = 0;
-        t_final = val2;
+        t_target = val2;
         p_init = dji_fb.enc;
         p_diff = ctrl_target - p_init;
         v_init = dji_fb.rpm;
         v_init = (v_init * 8191.0) / (1000.0 * 60.0);
-        vt = (v_init / p_diff) * t_final;
+        vt = (v_init / p_diff) * t_target;
+
+        break;
+    case 'pvaj':
+        ctrl_mode = MODE_PVAJ;
+        ctrl_target = constrain(val, -MAX_POS, MAX_POS);
+        t_current = 0;
+        t_target = val2;
+        p_init = dji_fb.enc;
+        p_diff = ctrl_target - p_init;
+        v_init = dji_fb.rpm;
+        v_init = (v_init * 8191.0) / (1000.0 * 60.0);
+        vt = (v_init / p_diff) * t_target;
 
         break;
     case 'f':
@@ -154,11 +172,11 @@ int32_t control()
         }
         else
         {
-            if (t_current <= t_final && t_final != 0)
+            if (t_current <= t_target && t_target != 0)
             {
                 // formular * p_diff + p_init -> getting the correst s-t graph
-                p_exp = (((v_init * t_current) / p_diff) + (((3.0 - 2.0 * vt) / (t_final * t_final)) * t_current * t_current) - (((2.0 - 1.0 * vt) / (t_final * t_final * t_final)) * t_current * t_current * t_current)) * (p_diff) + p_init; // unit = encoder count
-                v_exp = ((v_init / p_diff) + (((6.0 - 4.0 * vt) / (t_final * t_final)) * t_current) - (((6.0 - 3.0 * vt) / (t_final * t_final * t_final)) * (t_current * t_current))) * p_diff;
+                p_exp = (((v_init * t_current) / p_diff) + (((3.0 - 2.0 * vt) / (t_target * t_target)) * t_current * t_current) - (((2.0 - 1.0 * vt) / (t_target * t_target * t_target)) * t_current * t_current * t_current)) * (p_diff) + p_init; // unit = encoder count
+                v_exp = ((v_init / p_diff) + (((6.0 - 4.0 * vt) / (t_target * t_target)) * t_current) - (((6.0 - 3.0 * vt) / (t_target * t_target * t_target)) * (t_current * t_current))) * p_diff;
                 v_exp = (v_exp * 1000 * 60) / 8191; // unit = rpm
                 a_exp = (v_exp - pre_v_exp) * 1000; // unit = rpm/s, if want to find rpm/sp, remove "* 1000"
                 pre_v_exp = v_exp;

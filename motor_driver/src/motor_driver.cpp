@@ -3,10 +3,31 @@
 #include <serial/serial.h>
 #include <sstream>
 #include "motor_driver/pos_time.h"
+#include "motor_driver/pvaj.h"
 #include <fstream>
 using namespace std;
 std::string old_command = "";
 std::string command = "f \r\n";
+
+void pvajCallback(const motor_driver::pvaj::ConstPtr &value)
+{
+    command = "pvaj ";
+    int position = value->pos;
+    int vel = value->vel;
+    int acc = value->acc;
+    int jerk = value->jerk;
+    command += std::to_string(position);
+    command += " ";
+    command += std::to_string(vel);
+    command += " ";
+    command += std::to_string(acc);
+    command += " ";
+    command += std::to_string(jerk);
+    command += "\r\n";
+    ROS_INFO("command changed");
+
+    return;
+}
 
 // if the command is p, run this callback.
 void pCallback(const motor_driver::pos_time::ConstPtr &value)
@@ -52,6 +73,7 @@ int main(int argc, char **argv)
     ros::Publisher i_pub = nh.advertise<std_msgs::Int32>("i_feedback", 1);
     ros::Subscriber p_sub = nh.subscribe("p_setpoint", 1, pCallback);
     ros::Subscriber v_sub = nh.subscribe("v_setpoint", 1, vCallback);
+    ros::Subscriber pvaj_sub = nh.subscribe("pvaj_setpoint", 1, pvajCallback);
 
     serial::Serial motor("/dev/ttyUSB0", 1000000);
 
