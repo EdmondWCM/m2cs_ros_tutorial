@@ -20,8 +20,8 @@ enum Control_Mode
 {
     MODE_CUR,     // value = 0
     MODE_VEL,     // value = 1
-    MODE_POS      // value = 2
-        MODE_PVAJ // value = 3
+    MODE_POS,     // value = 2
+    MODE_PVAJ     // value = 3
 };
 
 // variable
