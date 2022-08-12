@@ -51,6 +51,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   pos_time.msg
+  pos_vel.msg
   # Message1.msg
   # Message2.msg
 )

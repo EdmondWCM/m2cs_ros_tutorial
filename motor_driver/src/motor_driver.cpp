@@ -9,13 +9,11 @@ using namespace std;
 std::string old_command = "";
 std::string command = "f \r\n";
 
-void pvCallback(const motor_driver::pvaj::ConstPtr &value)
+void pvCallback(const motor_driver::pos_vel::ConstPtr &value)
 {
-    command = "pv ";
+    command = "s ";
     int position = value->pos;
     int vel = value->vel;
-    int acc = value->acc;
-    int jerk = value->jerk;
     command += std::to_string(position);
     command += " ";
     command += std::to_string(vel);

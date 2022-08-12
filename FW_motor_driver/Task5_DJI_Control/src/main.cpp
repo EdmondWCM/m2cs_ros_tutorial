@@ -1,9 +1,6 @@
 #include <Arduino.h>
 #include "dji.h"
 #include <Encoder.h>
-#include <Arduino.h>
-#include "dji.h"
-#include <Encoder.h>
 
 // control loop limit for safe
 
@@ -95,7 +92,7 @@ void get_command()
     }
 
     int noOfField = sscanf(cmd_buf, "%s %ld %ld", &cmd, &val, &val2);
-    if (!((noOfField == 3 && (cmd == 'pv')) || (noOfField == 3 && (cmd == 'p')) || (noOfField == 2 && (cmd == 'i' || cmd == 'v')) || (cmd == 'f')))
+    if (!((noOfField == 3 && (cmd == 's')) || (noOfField == 3 && (cmd == 'p')) || (noOfField == 2 && (cmd == 'i' || cmd == 'v')) || (cmd == 'f')))
     {
         Serial.write("returned");
         return;
@@ -127,7 +124,7 @@ void get_command()
         vt = (v_init / p_diff) * t_target;
 
         break;
-    case 'pv':
+    case 's':
         ctrl_mode = MODE_POS_VEL;
         ctrl_target = constrain(val, -MAX_POS, MAX_POS);
         t_current = 0;
@@ -230,4 +227,31 @@ int32_t control()
     // Task 5b.1 - limit the change in current (do it first)
     // 1. find the difference between the desired current output(i_des) and previous current output (prev_i_out)
     // 2. limit the difference with MAX_CUR_CHANGE using constrain()
-    // 3. apply the limited change to the previous current output 
+    // 3. apply the limited change to the previous current output (prev_i_out)
+    // 4. prev_i_out is now the calculated current, assign it to i_out
+    // TYPE YOUR CODE HERE:
+    prev_i_out = constrain(i_des - prev_i_out, -MAX_CUR_CHANGE, MAX_CUR_CHANGE);
+    i_out = prev_i_out;
+    return i_out; // return the calculated current output
+}
+
+void setup()
+{
+    while (!Serial)
+        ; // wait serial ready
+    Serial.begin(1000000);
+    Serial.flush();
+    dji_init();
+    // Serial.println("DJI Init Done");
+}
+
+void loop()
+{
+    // Do not change anything here
+    get_command();
+
+    if (dji_get_feedback())
+    {
+        dji_set_current(control());
+    }
+}
