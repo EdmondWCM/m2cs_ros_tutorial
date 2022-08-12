@@ -1,11 +1,10 @@
 #include <Arduino.h>
 #include "dji.h"
 #include <Encoder.h>
-#include <iostream>
-#include <ruckig/ruckig.hpp>
 
 
-using namespace ruckig;
+
+
 // control loop limit for safe
 
 #define MAX_VEL 5000        // maximum velocity +- 5000 rpm
@@ -23,7 +22,6 @@ enum Control_Mode
     MODE_CUR, // value = 0
     MODE_VEL, // value = 1
     MODE_POS  // value = 2
-    MODE_PVAJ // value = 3
 };
 
 // variable
@@ -116,18 +114,6 @@ void get_command()
         break;
     case 'p':
         ctrl_mode = MODE_POS;
-        ctrl_target = constrain(val, -MAX_POS, MAX_POS);
-        t_current = 0;
-        t_target = val2;
-        p_init = dji_fb.enc;
-        p_diff = ctrl_target - p_init;
-        v_init = dji_fb.rpm;
-        v_init = (v_init * 8191.0) / (1000.0 * 60.0);
-        vt = (v_init / p_diff) * t_target;
-
-        break;
-    case 'pvaj':
-        ctrl_mode = MODE_PVAJ;
         ctrl_target = constrain(val, -MAX_POS, MAX_POS);
         t_current = 0;
         t_target = val2;
