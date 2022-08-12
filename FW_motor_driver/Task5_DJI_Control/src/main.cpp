@@ -1,7 +1,6 @@
 #include <Arduino.h>
 #include "dji.h"
 #include <Encoder.h>
-#include <iostream>
 #include <ruckig/ruckig.hpp>
 
 using namespace ruckig;
@@ -49,6 +48,10 @@ double pre_a_exp = 0; // previous expected accleration
 double jerk_max = 0;
 double jerk_current = 0;
 double jerk_exp = 0; // expected jerk
+
+Ruckig<1> otg{0.001}; // control cycle
+InputParameter<1> input;
+OutputParameter<1> output;
 
 // This function will print out the feedback on the serial monitor
 void print_feedback()
@@ -142,11 +145,23 @@ void get_command()
         p_diff = ctrl_target - p_init;
         v_init = v_current;
         v_init = (v_init * 8191.0) / (1000.0 * 60.0);
-        v_max = val2;
-        a_init = a_current;
-        a_max = val3;
-        jerk_max = val4;
+        v_max = (val2 * 8191.0) / (1000.0 * 60.0);
+        a_init = (a_current * 8191.0) / (1000.0 * 60.0);
+        a_max = (val3 * 8191.0) / (1000.0 * 60.0);
+        jerk_max = (val4 * 8191.0) / (1000.0 * 60.0);
 
+        // Set input parameters
+        input.current_position = {p_init};
+        input.current_velocity = {v_init};
+        input.current_acceleration = {a_init};
+
+        input.target_position = {ctrl_target};
+        input.target_velocity = {0.0};
+        input.target_acceleration = {0.0};
+
+        input.max_velocity = {v_max};
+        input.max_acceleration = {a_max};
+        input.max_jerk = {jerk_max};
         break;
     case 'f':
 
@@ -182,18 +197,38 @@ int32_t control()
         }
         else
         {
-            if (t_current <= t_target && t_target != 0)
+            if (ctrl_mode = MODE_POS)
             {
-                // formular * p_diff + p_init -> getting the correst s-t graph
-                p_exp = (((v_init * t_current) / p_diff) + (((3.0 - 2.0 * vt) / (t_target * t_target)) * t_current * t_current) - (((2.0 - 1.0 * vt) / (t_target * t_target * t_target)) * t_current * t_current * t_current)) * (p_diff) + p_init; // unit = encoder count
-                v_exp = ((v_init / p_diff) + (((6.0 - 4.0 * vt) / (t_target * t_target)) * t_current) - (((6.0 - 3.0 * vt) / (t_target * t_target * t_target)) * (t_current * t_current))) * p_diff;
-                v_exp = (v_exp * 1000 * 60) / 8191; // unit = rpm
-                a_exp = (v_exp - pre_v_exp) * 1000; // unit = rpm/s, if want to find rpm/sp, remove "* 1000"
-                pre_v_exp = v_exp;
-                jerk_exp = (a_exp - pre_a_exp) * 1000; // unit rpm/s^-2, if want to find rpm/sp^-2, remove "* 1000" here and in a_exp
-                pre_a_exp = a_exp;
-                t_current++;
+                if (t_current <= t_target && t_target != 0)
+                {
+                    // formular * p_diff + p_init -> getting the correst s-t graph
+                    p_exp = (((v_init * t_current) / p_diff) + (((3.0 - 2.0 * vt) / (t_target * t_target)) * t_current * t_current) - (((2.0 - 1.0 * vt) / (t_target * t_target * t_target)) * t_current * t_current * t_current)) * (p_diff) + p_init; // unit = encoder count
+                    v_exp = ((v_init / p_diff) + (((6.0 - 4.0 * vt) / (t_target * t_target)) * t_current) - (((6.0 - 3.0 * vt) / (t_target * t_target * t_target)) * (t_current * t_current))) * p_diff;
+                    v_exp = (v_exp * 1000 * 60) / 8191; // unit = rpm
+                    a_exp = (v_exp - pre_v_exp) * 1000; // unit = rpm/s, if want to find rpm/sp, remove "* 1000"
+                    pre_v_exp = v_exp;
+                    jerk_exp = (a_exp - pre_a_exp) * 1000; // unit rpm/s^-2, if want to find rpm/sp^-2, remove "* 1000" here and in a_exp
+                    pre_a_exp = a_exp;
+                    t_current++;
+                }
             }
+            else
+            {
+                if (otg.update(input, output) == Result::Working)
+                {
+                    auto &p = output.new_position;
+                    auto &v = output.new_velocity;
+                    auto &a = output.new_acceleration;
+
+                    p_exp = p[0];
+                    v_exp = (v[0]*1000*60)/8191;
+                    a_exp = (a[0]*1000*60)/8191;
+                    
+
+                    output.pass_to_input(input);
+                }
+            }
+
             p_err = p_exp - dji_fb.enc;
             v_des = P_KP * p_err + v_exp;
             v_des = constrain(v_des, -MAX_VEL, MAX_VEL);
