@@ -1,9 +1,9 @@
 #include <Arduino.h>
 #include "dji.h"
 #include <Encoder.h>
-
-
-
+#include <Arduino.h>
+#include "dji.h"
+#include <Encoder.h>
 
 // control loop limit for safe
 
@@ -19,20 +19,23 @@
 
 enum Control_Mode
 {
-    MODE_CUR, // value = 0
-    MODE_VEL, // value = 1
-    MODE_POS  // value = 2
+    MODE_CUR,    // value = 0
+    MODE_VEL,    // value = 1
+    MODE_POS,    // value = 2
+    MODE_POS_VEL // value =3
+
 };
 
 // variable
 Control_Mode ctrl_mode;
 double ctrl_target;
 double t_current = 0; // current time
-double t_target = 0;   // target time
+double t_target = 0;  // target time
 double p_init = 0;    // initial position
 double p_exp = 0;     // expected position
 double p_diff = 0;    // diff in initial and target position
 double v_init = 0;    // initial velocity
+double v_max = 0;
 double v_exp = 0;     // expected velocity
 double pre_v_exp = 0; // previous expected velocity
 double vt = 0;        // (v_init / p_diff) * t_target
@@ -91,8 +94,8 @@ void get_command()
         return;
     }
 
-    int noOfField = sscanf(cmd_buf, "%s %ld %ld", &cmd, &val, &val2, &);
-    if (!((noOfField == 5 && (cmd == 'pvaj')) || (noOfField == 3 && (cmd == 'p')) || (noOfField == 2 && (cmd == 'i' || cmd == 'v')) || (cmd == 'f')))
+    int noOfField = sscanf(cmd_buf, "%s %ld %ld", &cmd, &val, &val2);
+    if (!((noOfField == 3 && (cmd == 'pv')) || (noOfField == 3 && (cmd == 'p')) || (noOfField == 2 && (cmd == 'i' || cmd == 'v')) || (cmd == 'f')))
     {
         Serial.write("returned");
         return;
@@ -124,6 +127,20 @@ void get_command()
         vt = (v_init / p_diff) * t_target;
 
         break;
+    case 'pv':
+        ctrl_mode = MODE_POS_VEL;
+        ctrl_target = constrain(val, -MAX_POS, MAX_POS);
+        t_current = 0;
+        p_init = dji_fb.enc;
+        p_diff = ctrl_target - p_init;
+        v_init = dji_fb.rpm;
+        v_max = val2;
+        v_max = (v_max * 8191.0) / (1000.0 * 60.0);
+        t_target = 15.0 / (8.0 * v_max);
+        v_init = (v_init * 8191.0) / (1000.0 * 60.0);
+        vt = (v_init / p_diff) * t_target;
+
+        break;
     case 'f':
 
         break;
@@ -143,6 +160,7 @@ int32_t control()
     // desired current output, real current output
     double i_des, i_out;
     static double prev_i_out; // current output the previous loop cycle
+    double C, D, E;
 
     if (ctrl_mode == MODE_CUR)
     {
@@ -169,6 +187,20 @@ int32_t control()
                 jerk_exp = (a_exp - pre_a_exp) * 1000; // unit rpm/s^-2, if want to find rpm/sp^-2, remove "* 1000" here and in a_exp
                 pre_a_exp = a_exp;
                 t_current++;
+            }
+            else
+            {
+                C = 10.0 - 6.0 * vt;
+                D = 8 * vt - 15;
+                E = 6 - 3 * vt;
+                p_exp = (v_init * t_current + (C * t_current * t_current * t_current) / (t_target * t_target * t_target) + (D * t_current * t_current * t_current * t_current) / (t_target * t_target * t_target * t_target) + (E * t_current * t_current * t_current * t_current * t_current) / (t_target * t_target * t_target * t_target * t_target)) * p_diff + p_init;
+                v_exp = (v_init + (3 * C * t_current * t_current) / (t_target * t_target * t_target) + (4 * D * t_current * t_current * t_current) / (t_target * t_target * t_target * t_target)+(5*E*t_current*t_current*t_current*t_current)/(t_target*t_target*t_target*t_target*t_target))*p_diff+p_init;
+                a_exp = (6*C*t_current)/(t_target*t_target*t_target)+(12*D*t_current*t_current)/(t_target*t_target*t_target*t_target)+(20*E*t_current*t_current*t_current)/(t_target*t_target*t_target*t_target*t_target);
+                v_exp = (v_exp * 1000 * 60) / 8191; // unit = rpm
+                pre_v_exp = v_exp;
+                jerk_exp = (a_exp - pre_a_exp) * 1000; // unit rpm/s^-2, if want to find rpm/sp^-2, remove "* 1000" here and in a_exp
+                pre_a_exp = a_exp;
+                
             }
             p_err = p_exp - dji_fb.enc;
             v_des = P_KP * p_err + v_exp;
@@ -198,31 +230,4 @@ int32_t control()
     // Task 5b.1 - limit the change in current (do it first)
     // 1. find the difference between the desired current output(i_des) and previous current output (prev_i_out)
     // 2. limit the difference with MAX_CUR_CHANGE using constrain()
-    // 3. apply the limited change to the previous current output (prev_i_out)
-    // 4. prev_i_out is now the calculated current, assign it to i_out
-    // TYPE YOUR CODE HERE:
-    prev_i_out = constrain(i_des - prev_i_out, -MAX_CUR_CHANGE, MAX_CUR_CHANGE);
-    i_out = prev_i_out;
-    return i_out; // return the calculated current output
-}
-
-void setup()
-{
-    while (!Serial)
-        ; // wait serial ready
-    Serial.begin(1000000);
-    Serial.flush();
-    dji_init();
-    // Serial.println("DJI Init Done");
-}
-
-void loop()
-{
-    // Do not change anything here
-    get_command();
-
-    if (dji_get_feedback())
-    {
-        dji_set_current(control());
-    }
-}
+    // 3. apply the limited change to the previous current output 

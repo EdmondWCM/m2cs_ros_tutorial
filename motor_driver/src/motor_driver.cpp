@@ -69,7 +69,7 @@ int main(int argc, char **argv)
     ros::Publisher i_pub = nh.advertise<std_msgs::Int32>("i_feedback", 1);
     ros::Subscriber p_sub = nh.subscribe("p_setpoint", 1, pCallback);
     ros::Subscriber v_sub = nh.subscribe("v_setpoint", 1, vCallback);
-    ros::Subscriber pvaj_sub = nh.subscribe("pv_setpoint", 1, pvCallback);
+    ros::Subscriber pv_sub = nh.subscribe("pv_setpoint", 1, pvCallback);
 
     serial::Serial motor("/dev/ttyUSB0", 1000000);
 
