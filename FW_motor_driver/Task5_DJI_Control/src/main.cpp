@@ -173,31 +173,37 @@ int32_t control()
         }
         else
         {
-            if (t_current <= t_target && t_target != 0)
+            if (ctrl_mode == MODE_POS)
             {
-                // formular * p_diff + p_init -> getting the correst s-t graph
-                p_exp = (((v_init * t_current) / p_diff) + (((3.0 - 2.0 * vt) / (t_target * t_target)) * t_current * t_current) - (((2.0 - 1.0 * vt) / (t_target * t_target * t_target)) * t_current * t_current * t_current)) * (p_diff) + p_init; // unit = encoder count
-                v_exp = ((v_init / p_diff) + (((6.0 - 4.0 * vt) / (t_target * t_target)) * t_current) - (((6.0 - 3.0 * vt) / (t_target * t_target * t_target)) * (t_current * t_current))) * p_diff;
-                v_exp = (v_exp * 1000 * 60) / 8191; // unit = rpm
-                a_exp = (v_exp - pre_v_exp) * 1000; // unit = rpm/s, if want to find rpm/sp, remove "* 1000"
-                pre_v_exp = v_exp;
-                jerk_exp = (a_exp - pre_a_exp) * 1000; // unit rpm/s^-2, if want to find rpm/sp^-2, remove "* 1000" here and in a_exp
-                pre_a_exp = a_exp;
-                t_current++;
+                if (t_current <= t_target && t_target != 0)
+                {
+                    // formular * p_diff + p_init -> getting the correst s-t graph
+                    p_exp = (((v_init * t_current) / p_diff) + (((3.0 - 2.0 * vt) / (t_target * t_target)) * t_current * t_current) - (((2.0 - 1.0 * vt) / (t_target * t_target * t_target)) * t_current * t_current * t_current)) * (p_diff) + p_init; // unit = encoder count
+                    v_exp = ((v_init / p_diff) + (((6.0 - 4.0 * vt) / (t_target * t_target)) * t_current) - (((6.0 - 3.0 * vt) / (t_target * t_target * t_target)) * (t_current * t_current))) * p_diff;
+                    v_exp = (v_exp * 1000 * 60) / 8191; // unit = rpm
+                    a_exp = (v_exp - pre_v_exp) * 1000; // unit = rpm/s, if want to find rpm/sp, remove "* 1000"
+                    pre_v_exp = v_exp;
+                    jerk_exp = (a_exp - pre_a_exp) * 1000; // unit rpm/s^-2, if want to find rpm/sp^-2, remove "* 1000" here and in a_exp
+                    pre_a_exp = a_exp;
+                    t_current++;
+                }
             }
             else
             {
-                C = 10.0 - 6.0 * vt;
-                D = 8 * vt - 15;
-                E = 6 - 3 * vt;
-                p_exp = (v_init * t_current + (C * t_current * t_current * t_current) / (t_target * t_target * t_target) + (D * t_current * t_current * t_current * t_current) / (t_target * t_target * t_target * t_target) + (E * t_current * t_current * t_current * t_current * t_current) / (t_target * t_target * t_target * t_target * t_target)) * p_diff + p_init;
-                v_exp = (v_init + (3 * C * t_current * t_current) / (t_target * t_target * t_target) + (4 * D * t_current * t_current * t_current) / (t_target * t_target * t_target * t_target)+(5*E*t_current*t_current*t_current*t_current)/(t_target*t_target*t_target*t_target*t_target))*p_diff+p_init;
-                a_exp = (6*C*t_current)/(t_target*t_target*t_target)+(12*D*t_current*t_current)/(t_target*t_target*t_target*t_target)+(20*E*t_current*t_current*t_current)/(t_target*t_target*t_target*t_target*t_target);
-                v_exp = (v_exp * 1000 * 60) / 8191; // unit = rpm
-                pre_v_exp = v_exp;
-                jerk_exp = (a_exp - pre_a_exp) * 1000; // unit rpm/s^-2, if want to find rpm/sp^-2, remove "* 1000" here and in a_exp
-                pre_a_exp = a_exp;
-                
+                if (t_current <= t_target && t_target != 0)
+                {
+                    C = 10.0 - 6.0 * vt;
+                    D = 8 * vt - 15;
+                    E = 6 - 3 * vt;
+                    p_exp = (v_init * t_current + (C * t_current * t_current * t_current) / (t_target * t_target * t_target) + (D * t_current * t_current * t_current * t_current) / (t_target * t_target * t_target * t_target) + (E * t_current * t_current * t_current * t_current * t_current) / (t_target * t_target * t_target * t_target * t_target)) * p_diff + p_init;
+                    v_exp = (v_init + (3 * C * t_current * t_current) / (t_target * t_target * t_target) + (4 * D * t_current * t_current * t_current) / (t_target * t_target * t_target * t_target) + (5 * E * t_current * t_current * t_current * t_current) / (t_target * t_target * t_target * t_target * t_target)) * p_diff + p_init;
+                    a_exp = (6 * C * t_current) / (t_target * t_target * t_target) + (12 * D * t_current * t_current) / (t_target * t_target * t_target * t_target) + (20 * E * t_current * t_current * t_current) / (t_target * t_target * t_target * t_target * t_target);
+                    v_exp = (v_exp * 1000 * 60) / 8191; // unit = rpm
+                    pre_v_exp = v_exp;
+                    jerk_exp = (a_exp - pre_a_exp) * 1000; // unit rpm/s^-2, if want to find rpm/sp^-2, remove "* 1000" here and in a_exp
+                    pre_a_exp = a_exp;
+                    t_current++;
+                }
             }
             p_err = p_exp - dji_fb.enc;
             v_des = P_KP * p_err + v_exp;
