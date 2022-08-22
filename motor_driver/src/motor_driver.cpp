@@ -69,7 +69,7 @@ int main(int argc, char **argv)
     ros::Subscriber v_sub = nh.subscribe("v_setpoint", 1, vCallback);
     ros::Subscriber pv_sub = nh.subscribe("pv_setpoint", 1, pvCallback);
 
-    serial::Serial motor("/dev/ttyUSB0", 1000000);
+    serial::Serial motor("/dev/ttyUSB0", 115200);
 
     ofstream fout;
 
