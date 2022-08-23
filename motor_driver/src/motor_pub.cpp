@@ -39,7 +39,7 @@ int main(int argc, char **argv)
 
     loop_rate.sleep();
     ++count;
-    if (count == 2){
+    if (count == 3){
       ros::shutdown();
     }
   }

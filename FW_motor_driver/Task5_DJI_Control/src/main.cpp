@@ -27,8 +27,11 @@ enum Control_Mode
 // variable
 Control_Mode ctrl_mode;
 double ctrl_target;
+double counter = -1;  // counter for pos_vel mode
+double counter_limit = 100; // limit for counter
 double t_current = 0; // current time
 double t_target = 0;  // target time
+double t_exp_with_max_vel = 0;     // expected time
 double p_init = 0;    // initial position
 double p_exp = 0;     // expected position
 double p_diff = 0;    // diff in initial and target position
@@ -55,9 +58,9 @@ void print_feedback()
   Serial.print(" ");
   Serial.print((long)v_exp);
   Serial.print(" ");
-  Serial.print((long)a_exp);
+  Serial.print((long)t_target);
   Serial.print(" ");
-  Serial.print((long)jerk_exp);
+  Serial.print((long)t_current);
   Serial.print(" ");
   Serial.println(millis());
 }
@@ -105,18 +108,21 @@ void get_command()
   case 'i':
     ctrl_mode = MODE_CUR;
     ctrl_target = constrain(val, -MAX_CUR, MAX_CUR);
+    counter = -1;
     t_current = 0;
 
     break;
   case 'v':
     ctrl_mode = MODE_VEL;
     ctrl_target = constrain(val, -MAX_VEL, MAX_VEL);
+    counter = -1;
     t_current = 0;
 
     break;
   case 'p':
     ctrl_mode = MODE_POS;
     ctrl_target = constrain(val, -MAX_POS, MAX_POS);
+    counter = -1;
     t_current = 0;
     t_target = val2;
     p_init = dji_fb.enc;
@@ -129,6 +135,7 @@ void get_command()
   case 's':
     ctrl_mode = MODE_POS_VEL;
     ctrl_target = constrain(val, -MAX_POS, MAX_POS);
+    counter = 0;
     t_current = 0;
     t_target = 1000;
     p_init = dji_fb.enc;
@@ -137,9 +144,7 @@ void get_command()
     v_current = 0;
     v_max = val2;
     v_max = (v_max * 8191.0) / (1000.0 * 60.0);
-    t_target = 15.0 / (8.0 * v_max);
     v_init = (v_init * 8191.0) / (1000.0 * 60.0);
-    vt = (v_init / p_diff) * t_target;
 
     break;
   case 'f':
@@ -161,7 +166,7 @@ int32_t control()
   // desired current output, real current output
   double i_des, i_out;
   static double prev_i_out; // current output the previous loop cycle
-  double A , B , C, D, E;
+  double A, B, C, D, E;
 
   if (ctrl_mode == MODE_CUR)
   {
@@ -179,45 +184,57 @@ int32_t control()
     {
       // MODE_POS and MODE_POS_VEL
       if (ctrl_mode == MODE_POS_VEL)
-      { 
-        A = (6.0 - 4.0 * vt);
-        B = (6.0 - 3.0 * vt);
-        for (int i = 0; i < 10; i++)
+      {
+
+        if (counter != -1 && counter < counter_limit)
         {
-          t_current = (A * t_target) / (2*B);
-          v_exp = ((v_init / p_diff) + ((A / (t_target * t_target)) * t_current) - ((B / (t_target * t_target * t_target)) * (t_current * t_current))) * p_diff;
-          if (v_exp < 0) {
-            v_exp = -v_exp;
-          }
-          if (v_exp < v_max)
+          vt = (v_init / p_diff) * t_target;
+          A = (6.0 - 4.0 * vt);
+          B = (6.0 - 3.0 * vt);
+          t_exp_with_max_vel = (A * t_target) / (2 * B);
+          v_exp = ((v_init / p_diff) + ((A / (t_target * t_target)) * t_exp_with_max_vel) - ((B / (t_target * t_target * t_target)) * (t_exp_with_max_vel * t_exp_with_max_vel))) * p_diff;
+          if (v_exp < 0)
           {
-            t_target = t_target * 0.5;
+            v_exp = abs(v_exp);
+          }
+          if (abs(v_exp - v_max) <= 100)
+          {
+            counter = counter_limit;
+          }
+          else if (v_exp < v_max)
+          {
+            t_target = t_target * 0.9;
+            counter++;
           }
           else if (v_exp > v_max)
           {
-            t_target = t_target * 1.5;
+            t_target = t_target * 2.5;
+            counter++;
           }
           else
           {
-            break;
+            counter = counter_limit;
           }
+
         }
       }
       // MODE_POS
+      vt = (v_init / p_diff) * t_target;
+      A = (6.0 - 4.0 * vt);
+      B = (6.0 - 3.0 * vt);
+      if ((counter == -1 || counter >= counter_limit) && t_current <= t_target && t_target != 0)
       {
-        if (t_current <= t_target && t_target != 0)
-        {
-          // formular * p_diff + p_init -> getting the correst s-t graph
-          p_exp = (((v_init * t_current) / p_diff) + (((A / 2 )/ (t_target * t_target)) * t_current * t_current) - (((B / 3) / (t_target * t_target * t_target)) * t_current * t_current * t_current)) * (p_diff) + p_init; // unit = encoder count
-          v_exp = ((v_init / p_diff) + ((A / (t_target * t_target)) * t_current) - ((B / (t_target * t_target * t_target)) * (t_current * t_current))) * p_diff;
-          v_exp = (v_exp * 1000 * 60) / 8191; // unit = rpm
-          a_exp = (v_exp - pre_v_exp) * 1000; // unit = rpm/s, if want to find rpm/sp, remove "* 1000"
-          pre_v_exp = v_exp;
-          jerk_exp = (a_exp - pre_a_exp) * 1000; // unit rpm/s^-2, if want to find rpm/sp^-2, remove "* 1000" here and in a_exp
-          pre_a_exp = a_exp;
-          t_current++;
-        }
+        // formular * p_diff + p_init -> getting the correst s-t graph
+        p_exp = (((v_init * t_current) / p_diff) + (((A / 2.0) / (t_target * t_target)) * t_current * t_current) - (((B / 3) / (t_target * t_target * t_target)) * t_current * t_current * t_current)) * (p_diff) + p_init; // unit = encoder count
+        v_exp = ((v_init / p_diff) + ((A / (t_target * t_target)) * t_current) - ((B / (t_target * t_target * t_target)) * (t_current * t_current))) * p_diff;
+        v_exp = (v_exp * 1000 * 60) / 8191; // unit = rpm
+        a_exp = (v_exp - pre_v_exp) * 1000; // unit = rpm/s, if want to find rpm/sp, remove "* 1000"
+        pre_v_exp = v_exp;
+        jerk_exp = (a_exp - pre_a_exp) * 1000; // unit rpm/s^-2, if want to find rpm/sp^-2, remove "* 1000" here and in a_exp
+        pre_a_exp = a_exp;
+        t_current++;
       }
+
       // else
       // {
       //     if (t_current <= t_target && t_target != 0)
