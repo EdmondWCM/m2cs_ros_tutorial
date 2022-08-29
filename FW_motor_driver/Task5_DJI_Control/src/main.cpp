@@ -12,8 +12,8 @@
 
 // control loop parameters
 #define P_KP 0.8
-#define P_KD 1024
-#define V_KP 512
+// #define P_KD 1024
+#define V_KP 3000
 
 enum Control_Mode
 {
