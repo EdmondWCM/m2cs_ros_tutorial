@@ -11,9 +11,10 @@
 #define MAX_POS 500000      // maximum position +-500000 count
 
 // control loop parameters
-#define P_KP 0.8
-// #define P_KD 1024
-#define V_KP 3000
+#define P_KP 0.35
+#define P_KD 0.5
+#define V_KP 1400
+#define V_KD 180
 
 enum Control_Mode
 {
@@ -27,23 +28,23 @@ enum Control_Mode
 // variable
 Control_Mode ctrl_mode;
 double ctrl_target;
-double counter = -1;  // counter for pos_vel mode
-double counter_limit = 100; // limit for counter
-double t_current = 0; // current time
-double t_target = 0;  // target time
-double t_exp_with_max_vel = 0;     // expected time
-double p_init = 0;    // initial position
-double p_exp = 0;     // expected position
-double p_diff = 0;    // diff in initial and target position
-double v_init = 0;    // initial velocity
-double v_current = 0; // current velocity
-double v_max = 0;     // max velocity
-double v_exp = 0;     // expected velocity
-double pre_v_exp = 0; // previous expected velocity
-double vt = 0;        // (v_init / p_diff) * t_target
-double a_exp = 0;     // expected accleration
-double pre_a_exp = 0; // previous expected accleration
-double jerk_exp = 0;  // expected jerk
+double counter = -1;           // counter for pos_vel mode
+double counter_limit = 100;    // limit for counter
+double t_current = 0;          // current time
+double t_target = 0;           // target time
+double t_exp_with_max_vel = 0; // expected time
+double p_init = 0;             // initial position
+double p_exp = 0;              // expected position
+double p_diff = 0;             // diff in initial and target position
+double v_init = 0;             // initial velocity
+double v_current = 0;          // current velocity
+double v_max = 0;              // max velocity
+double v_exp = 0;              // expected velocity
+double pre_v_exp = 0;          // previous expected velocity
+double vt = 0;                 // (v_init / p_diff) * t_target
+double a_exp = 0;              // expected accleration
+double pre_a_exp = 0;          // previous expected accleration
+double jerk_exp = 0;           // expected jerk
 
 // This function will print out the feedback on the serial monitor
 void print_feedback()
@@ -160,9 +161,9 @@ void get_command()
 int32_t control()
 {
   // error of output
-  double p_err;
+  double p_err, pre_p_err, dp_err;
   // desired output, error of output
-  double v_des, v_err;
+  double v_des, v_err, pre_v_err, dv_err;
   // desired current output, real current output
   double i_des, i_out;
   static double prev_i_out; // current output the previous loop cycle
@@ -215,7 +216,6 @@ int32_t control()
           {
             counter = counter_limit;
           }
-
         }
       }
       // MODE_POS
@@ -252,18 +252,20 @@ int32_t control()
       //         t_current++;
       //     }
       // }
-      p_err = p_exp - dji_fb.enc;
-      v_des = P_KP * p_err + v_exp;
-      v_des = constrain(v_des, -MAX_VEL, MAX_VEL);
-
-      //<-------old code--------> (for debug only)
-      // p_err = p_des - dji_fb.enc;
-      // dp_err = p_err - prev_p_err;
-      // prev_p_err = p_err;
-      // v_des = P_KP * p_err + P_KD * dp_err;
-      // v_des /= 128;
-      // v_des = constrain(v_des, -MAX_VEL, MAX_VEL);
     }
+    p_err = p_exp - dji_fb.enc;
+    dp_err = p_err - pre_p_err;
+    pre_p_err = p_err;
+    v_des = P_KP * p_err + P_KD * dp_err + v_exp;
+    v_des = constrain(v_des, -MAX_VEL, MAX_VEL);
+
+    //<-------old code--------> (for debug only)
+    // p_err = p_des - dji_fb.enc;
+    // dp_err = p_err - prev_p_err;
+    // prev_p_err = p_err;
+    // v_des = P_KP * p_err + P_KD * dp_err;
+    // v_des /= 128;
+    // v_des = constrain(v_des, -MAX_VEL, MAX_VEL);
 
     // MODE_VEL and MODE_POS will go through this:
     // Task 5b.2 - velocity control loop
@@ -272,7 +274,9 @@ int32_t control()
     // 3. limit i_des with MAX_CUR using constrain()
     // TYPE YOUR CODE HERE:
     v_err = v_des - dji_fb.rpm;
-    i_des = V_KP * v_err;
+    dv_err = v_err - pre_v_err;
+    pre_v_err = v_err;
+    i_des = V_KP * v_err + V_KD * dv_err;
     i_des /= 128;
     i_des = constrain(i_des, -MAX_CUR, MAX_CUR);
   }
